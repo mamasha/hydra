@@ -1,0 +1,89 @@
+====== Welcome to Hydra project ======
+
+This site is about prototyping. How to test you ideas fast.
+You get Matlab code, run it in your application on desktop on mobile on cloud.
+
+You have to scale you math over huge data set, no problem.
+
+And most important you team has a bright algorithm developer but he is not a programmer?
+This tool is for him.
+
+If you have a proper architecture and development team, I guess you don't need this tool set.
+But our live probably more vertisile most of the times. So out start point is this:
+
+One moning your smartest algorithm developer comes and tell that he/she has a dream.
+
+If only I could check it in our running prototype and give you a Matlab code
+
+<code>
+function r = add(a, b)
+  r = a + b;
+</code>
+
+You tell him: "Oh, with all of technology out there this ain't a proglem any more".
+I know that Matlab has tools exactly for that.
+
+The developer gui tell, look I saw an interesting project on the net, some thing like
+you write in .Net
+
+<code csharp>
+double r = Vcall.Perform(() => Vcall.Func("add", a, b));
+</code>
+
+Then you run in you matlab
+
+<code>
+vcall_accept(@add);
+</code>
+
+And that it.
+
+In an hour later the smartest algorithm comes and with a sparking eyes tells.
+Listen that seems to work, I have made a couple of change in my Alg. The tool amazing.
+I already tested a couple of different approaches I head in my mide.
+
+Look the Fouirer Transform with ... might work very nice.
+
+If only I could check it on our data set of 100000 frames.
+
+You tell him: "Oh, in all the technology out there it ain't a problem".
+Took WCF and write a service and go to Azure and run 1000 instances of...
+
+I'll go and check it with Bob.
+
+Bob: "This amazing tool can do exactly that thing"
+
+<code csharp>
+double r = Vcall.Perform(() => Vcall.Func("add", a, b), Azure);
+</code>
+
+After lunch Joe enters and tells, this tool is amazing, I can change my Matlab
+and get a result of massive data set in about a hour.
+
+Tommorow I'll give you a working Matlam for implementation.
+
+Bob is waiting for you.
+
+A couple of days later.
+
+There is some problem in your Matlab, tells Bob.
+No I thing something wrong with your implementation. 
+
+If only we could test the middle result in two control points
+
+Bob, tells I'll check that Vcall they probably thought of something
+
+<code csharp>
+double add(double a, doulbe b)
+{
+    Vcall.Test("Before ...", () => Vcall.Point(a, b));
+}
+</code>
+
+<code>
+function r = add(a, b)
+  vcall_test("before ....", a, b);
+</code>
+
+After a minute you here: "I told you it there!", "I told you there is bogus eigen value"
+

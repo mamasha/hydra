@@ -1,0 +1,6 @@
+_ReSharper.l4p/
+
+obj/
+
+*.suo
+*.user
