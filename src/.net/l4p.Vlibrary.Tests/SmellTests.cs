@@ -5,8 +5,11 @@ using NUnit.Framework;
 namespace l4p.Vlibrary.Tests
 {
     [TestFixture]
-    class HostingTests
+    class SmellTests
     {
+        [SetUp] void StartVcallSerives() { Vcall.StartServices(); }
+        [TearDown] void StopVcallServices() { Vcall.StopServices(); }
+
         private bool _fooIsCalled;
 
         [SetUp]
@@ -21,13 +24,13 @@ namespace l4p.Vlibrary.Tests
         }
 
         [Test]
-        public void HostSingleFunction_should_host_a_function()
+        public void LocalHostSingleFunction_should_call_a_function()
         {
-            var vhost = Vcore.NewHosting();
-            var vcall = Vcore.NewTarget();
+            var vhost = Vcall.NewHosting();
+            var vtarget = Vcall.NewTarget();
 
             vhost.AddTarget(Foo);
-            vcall.Call(() => Foo());
+            vtarget.Call(() => Foo());
 
             Assert.That(_fooIsCalled, Is.True);
         }

@@ -7,15 +7,22 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Linq.Expressions;
+using l4p.VcallModel.Helpers;
 
-namespace l4p.VcallModel
+namespace l4p.VcallModel.Core
 {
-    interface IVimpl : IVcall, IVhost
+    class ResolutionDomain
+    {}
+
+    interface IVimpl : IVtarget, IVhosting
     { }
 
     class Vimpl : IVimpl
     {
         #region members
+
+        private static readonly ILogger _log = Logger.New("Vimpl");
+        private static readonly IHelpers Helpers = Utils.New(_log);
 
         private Action _target;
 
@@ -36,22 +43,25 @@ namespace l4p.VcallModel
 
         #region IVcall
 
-        void IVcall.Call(Expression<Action> vcall)
+        void IVtarget.Call(Expression<Action> vcall)
         {
             _target();
         }
 
-        R IVcall.Call<R>(Expression<Func<R>> vcall)
+        R IVtarget.Call<R>(Expression<Func<R>> vcall)
         {
             throw new NotImplementedException();
         }
 
-        void IVcall.Call(string methodName, params object[] args)
+        void IVtarget.Call(string methodName, params object[] args)
         {
+            throw 
+                Helpers.MakeNew<VcallException>(null, "'{0}' There is no registered targets for subject '{1}'", "resolving key", methodName);
+
             throw new NotImplementedException();
         }
 
-        R IVcall.Call<R>(string functionName, params object[] args)
+        R IVtarget.Call<R>(string functionName, params object[] args)
         {
             throw new NotImplementedException();
         }
@@ -60,37 +70,37 @@ namespace l4p.VcallModel
 
         #region IVhost
 
-        void IVhost.AddTarget(Action target)
+        void IVhosting.AddTarget(Action target)
         {
             _target = target;
         }
 
-        void IVhost.AddTarget<R>(Func<R> target)
+        void IVhosting.AddTarget<R>(Func<R> target)
         {
             throw new NotImplementedException();
         }
 
-        void IVhost.AddTarget<T1, T2>(Action<T1, T2> target)
+        void IVhosting.AddTarget<T1, T2>(Action<T1, T2> target)
         {
             throw new NotImplementedException();
         }
 
-        void IVhost.AddTarget<T1, R>(Func<T1, R> target)
+        void IVhosting.AddTarget<T1, R>(Func<T1, R> target)
         {
             throw new NotImplementedException();
         }
 
-        void IVhost.AddTarget<T1, T2, R>(Func<T1, T2, R> target)
+        void IVhosting.AddTarget<T1, T2, R>(Func<T1, T2, R> target)
         {
             throw new NotImplementedException();
         }
 
-        void IVhost.AddTarget<T1, T2>(string targetName, Action<T1, T2> target)
+        void IVhosting.AddTarget<T1, T2>(string targetName, Action<T1, T2> target)
         {
             throw new NotImplementedException();
         }
 
-        R IVhost.AddTarget<T1, T2, R>(string targetName, Func<T1, T2, R> target)
+        R IVhosting.AddTarget<T1, T2, R>(string targetName, Func<T1, T2, R> target)
         {
             throw new NotImplementedException();
         }
