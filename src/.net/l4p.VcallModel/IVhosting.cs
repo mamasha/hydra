@@ -9,7 +9,7 @@ using System;
 
 namespace l4p.VcallModel
 {
-    public interface IVhosting
+    public interface IVhosting : IDisposable
     {
         /// <summary>
         /// Set method to be hosted ...</summary>
@@ -29,5 +29,10 @@ namespace l4p.VcallModel
 
         void AddTarget<T1, R>(Func<T1, R> target);
         void AddTarget<T1, T2, R>(Func<T1, T2, R> target);
+
+        /// <summary>
+        /// Close all underlaying services of this hosting instance </summary>
+        /// <remarks>Calling any method after Close() is called will lead to unpredictable results</remarks>
+        void Close();
     }
 }

@@ -7,6 +7,13 @@ copied or duplicated in any form, in whole or in part.
 
 namespace l4p.VcallModel
 {
+    public enum NonRegisteredCallPolicy
+    {
+        Default,
+        ThrowException,
+        IgnoreCall
+    }
+
     public class TargetConfiguration
     {
         /// <summary>
@@ -16,5 +23,7 @@ namespace l4p.VcallModel
         /// <summary>
         /// The resolving host key </summary>
         public string ResolvingKey { get; set; }
+
+        public NonRegisteredCallPolicy NonRegisteredCall { get; set; }
     }
 }

@@ -133,7 +133,7 @@ namespace l4p.VcallModel.Helpers
 			string ename = typeof(E).Name;
 			string errMsg = build_err_msg(format, args);
 
-            Helpers._log.Trace("{0}: {1}", ename, errMsg);
+            Helpers._log.Warn("{0}: {1}", ename, errMsg);
 
 		    throw
 				make_exception(typeof(E), errMsg, inner);
@@ -145,7 +145,7 @@ namespace l4p.VcallModel.Helpers
             string ename = typeof(E).Name;
             string errMsg = build_err_msg(format, args);
 
-            Helpers._log.Trace("{0}: {1}", ename, errMsg);
+            Helpers._log.Warn("{0}: {1}", ename, errMsg);
 
             return
                 make_exception(typeof(E), errMsg, inner);
@@ -196,12 +196,6 @@ namespace l4p.VcallModel.Helpers
             return sb.ToString();
         }
 
-        /// <summary>
-        /// Returns true if any of exception in exception chain (upper exception with inner exceptions)
-        /// is instance of TException class or its descendants </summary>
-        /// <typeparam name="TException">Exception of interest (all descendants are in)</typeparam>
-        /// <param name="ex">Exception this parameter</param>
-        /// <returns>true if TException is within exception chain</returns>
         public static bool IsConsequenceOf<TException>(this Exception ex)
             where TException : Exception
         {
@@ -218,12 +212,6 @@ namespace l4p.VcallModel.Helpers
             return false;
         }
 
-        /// <summary>
-        /// Returns true if any of exception in exception chain (upper exception with inner exceptions)
-        /// is instance of a specified exception type or its descendants </summary>
-        /// <param name="ex">Exception this parameter</param>
-        /// <param name="exceptionType">Exception type if interest (all descendants are in)</param>
-        /// <returns>true if TException is within exception chain</returns>
         public static bool IsConsequenceOf(this Exception ex, Type exceptionType)
         {
             var exOfInterest = exceptionType;
@@ -239,12 +227,6 @@ namespace l4p.VcallModel.Helpers
             return false;
         }
 
-        /// <summary>
-        /// Returns true if any of exception in exception chain (upper exception with inner exceptions)
-        /// has a specified substring in its message </summary>
-        /// <param name="ex">Exception this parameter</param>
-        /// <param name="subString"> sub-string to find</param>
-        /// <returns>true if sub-string is found within any message of exception chain</returns>
         public static bool IsConsequenceOf(this Exception ex, string subString)
         {
             while (ex != null)

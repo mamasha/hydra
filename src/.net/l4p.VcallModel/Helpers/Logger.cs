@@ -47,9 +47,15 @@ namespace l4p.VcallModel.Helpers
                 new Logger(name);
         }
 
+        public static ILogger New<T>()
+        {
+            return
+                new Logger(typeof(T).Name);
+        }
+
         private Logger(string name)
         {
-            _name = name;
+            _name = String.Format("[{0}]", name);
         }
 
         #endregion
@@ -82,7 +88,7 @@ namespace l4p.VcallModel.Helpers
 
         private void send_message(string msg)
         {
-            Console.WriteLine(msg);
+//            Console.WriteLine(msg);
             Trace.WriteLine(msg, _name);
         }
 

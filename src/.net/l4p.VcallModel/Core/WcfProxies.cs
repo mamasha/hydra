@@ -9,8 +9,22 @@ using System;
 using System.ServiceModel;
 using l4p.VcallModel.Helpers;
 
-namespace l4p.VcallModel.Gateways
+namespace l4p.VcallModel.Core
 {
+    [ServiceContract]
+    interface ITargetPeer
+    {
+        [OperationContract]
+        void UpdateSubjects();
+    }
+
+    [ServiceContract]
+    interface IHostingPeer
+    {
+        [OperationContract]
+        void RegisterTargetPeer(string callbackUri);
+    }
+
     class HostingPeerProxy : ClientBase<IHostingPeer>, IHostingPeer
     {
         public HostingPeerProxy(String uri) :

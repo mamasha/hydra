@@ -18,15 +18,19 @@ namespace l4p.VcallModel
         public VcallException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public static class Vcall
+    public sealed class Vcall
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New("Vcall");
+        private static readonly ILogger _log = Logger.New<Vcall>();
         private static readonly IHelpers Helpers = Utils.New(_log);
 
         private static readonly object _startMutex = new Object();
-        private static IVimpl _vimpl;
+
+        private static VcallConfiguration _config;
+        private static IVcallSubsystem _vcall;
+        private static IVhosting _defaultHosting;
+        private static IVtarget _defaultTarget;
 
         #endregion
 
@@ -35,39 +39,129 @@ namespace l4p.VcallModel
         static Vcall()
         { }
 
+        private Vcall()
+        { }
+
         #endregion
 
         #region private
 
         private static void assert_services_are_started()
         {
-            if (_vimpl != null)
+            if (_vcall != null)
                 return;
 
             throw
                 Helpers.MakeNew<VcallException>(null, "Vcall has not been initialized. Call StartServices() first.");
         }
 
-        private static void start_services()
+        private static void start_services(VcallConfiguration config)
         {
-            if (_vimpl != null)
+            if (_vcall != null)
                 return;
 
-            _vimpl = Vimpl.New();
+            var vcall = Helpers.TryCatch(
+                () => VcallSubsystem.New(config),
+                ex => Helpers.ThrowNew<VcallException>(ex, "Failed to create Vcall subsystem"));
+
+            Helpers.TryCatch(
+                () => vcall.Start(),
+                ex => Helpers.ThrowNew<VcallException>(ex, "Failed to start Vcall subsystem"));
+
+            _config = config;
+            _vcall = vcall;
+            _defaultHosting = null;
+            _defaultTarget = null;
 
             _log.Info("Vcall services are started");
         }
 
         private static void stop_services()
         {
-            if (_vimpl == null)
+            if (_vcall == null)
                 return;
 
-            _vimpl = null;
+            var defaultHosting = _defaultHosting;
+            var defaultTarget = _defaultTarget;
+            var vcall = _vcall;
+
+            _defaultHosting = null;
+            _defaultTarget = null;
+            _config = null;
+            _vcall = null;
+
+            try
+            {
+                if (defaultHosting != null)
+                    defaultHosting.Close();
+
+                if (defaultTarget != null)
+                    defaultTarget.Close();
+
+                Helpers.TryCatch(
+                    () => vcall.Stop(),
+                    ex => Helpers.ThrowNew<VcallException>(ex, "Failed to stop default Vcall endpoint services"));
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.GetDetailedMessage());
+            }
 
             _log.Info("Vcall services are stopped");
         }
 
+        private static IVhosting new_hosting(HostingConfiguration config)
+        {
+            try
+            {
+                return
+                    _vcall.NewHosting(config);
+            }
+            catch (Exception ex)
+            {
+                throw
+                    Helpers.MakeNew<VcallException>(ex, "[{0}] failed to create hosting", config.ResolvingKey);
+            }
+        }
+
+        private static IVtarget new_target(TargetConfiguration config)
+        {
+            try
+            {
+                return
+                    _vcall.NewTarget(config);
+            }
+            catch (Exception ex)
+            {
+                throw
+                    Helpers.MakeNew<VcallException>(ex, "[{0}] failed to create targets", config.ResolvingKey);
+            }
+        }
+
+        private static IVhosting get_default_hosting()
+        {
+            if (_defaultHosting != null)
+                return _defaultHosting;
+
+            _defaultHosting = new_hosting(new HostingConfiguration
+                                              {
+                                                  ResolvingKey = _config.ResolvingKey
+                                              });
+            return _defaultHosting;
+        }
+
+        private static IVtarget get_default_target()
+        {
+            if (_defaultTarget == null)
+                return _defaultTarget;
+
+            _defaultTarget = new_target(new TargetConfiguration
+                                            {
+                                                ResolvingKey = _config.ResolvingKey
+                                            });
+
+            return _defaultTarget;
+        }
         #endregion
 
         #region API
@@ -78,9 +172,24 @@ namespace l4p.VcallModel
         /// <remarks>Subsiquent calls to StartServices() are ignored</remarks>
         public static void StartServices()
         {
+            var config = new VcallConfiguration();
+
             lock (_startMutex)
             {
-                start_services();
+                start_services(config);
+            }
+        }
+
+        /// <summary>
+        /// Initialize and start essential services of Vcall system.
+        /// Should be called before any other Vcall functionality is accessed </summary>
+        /// <param name="config">Configuration to be used</param>
+        /// <remarks>Subsiquent calls to StartServices() are ignored</remarks>
+        public static void StartServices(VcallConfiguration config)
+        {
+            lock (_startMutex)
+            {
+                start_services(config);
             }
         }
 
@@ -99,12 +208,17 @@ namespace l4p.VcallModel
 
         /// <summary>
         /// Get default target model </summary>
-        public static IVtarget DefaultTarget
+        public static IVtarget DefaultTargets
         {
             get
             {
                 assert_services_are_started();
-                return _vimpl;
+
+                lock (_startMutex)
+                {
+                    return
+                        get_default_target();
+                }
             }
         }
 
@@ -115,26 +229,26 @@ namespace l4p.VcallModel
             get
             {
                 assert_services_are_started();
-                return _vimpl;
+
+                lock (_startMutex)
+                {
+                    return
+                        get_default_hosting();
+                }
             }
         }
 
         /// <summary>
         /// Create new hosting model with default parameters ... </summary>
         /// <returns></returns>
-        public static IVhosting NewHosting()
+        public static IVhosting NewHosting(string resolvingKey)
         {
             assert_services_are_started();
-            return _vimpl;
-        }
-
-        /// <summary>
-        /// Create new target model with default parameters ...</summary>
-        /// <returns></returns>
-        public static IVtarget NewTarget()
-        {
-            assert_services_are_started();
-            return _vimpl;
+            return
+                new_hosting(new HostingConfiguration
+                                {
+                                    ResolvingKey = resolvingKey
+                                });
         }
 
         /// <summary>
@@ -144,17 +258,32 @@ namespace l4p.VcallModel
         public static IVhosting NewHosting(HostingConfiguration config)
         {
             assert_services_are_started();
-            throw new NotImplementedException();
+            return
+                new_hosting(config);
+        }
+
+        /// <summary>
+        /// Create new target model with default parameters ...</summary>
+        /// <returns></returns>
+        public static IVtarget GetTargetsAt(string resolvingKey)
+        {
+            assert_services_are_started();
+            return
+                _vcall.NewTarget(new TargetConfiguration
+                                     {
+                                         ResolvingKey = resolvingKey
+                                     });
         }
 
         /// <summary>
         /// Create new custom target model</summary>
         /// <param name="config">Costomization parameters</param>
         /// <returns>New target model</returns>
-        public static IVtarget NewTarget(TargetConfiguration config)
+        public static IVtarget GetTargetsAt(TargetConfiguration config)
         {
-            assert_services_are_started();
-            throw new NotImplementedException();
+                assert_services_are_started();
+                return
+                    new_target(config);
         }
 
         #endregion

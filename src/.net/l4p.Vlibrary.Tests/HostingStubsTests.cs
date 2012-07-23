@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace l4p.Vlibrary.Tests
 {
     [TestFixture]
-    class DefaultHostingStubsTests
+    class HostingStubsTests
     {
         [SetUp] void StartVcallSerives() { Vcall.StartServices(); }
         [TearDown] void StopVcallServices() { Vcall.StopServices(); }
@@ -12,13 +12,14 @@ namespace l4p.Vlibrary.Tests
         [Test, ExpectedException(typeof(VcallException), ExpectedMessage = "no registered targets", MatchType = MessageMatch.Contains)]
         public void CallNotExisingFunction_should_throw()
         {
-            Vcall.DefaultTarget.Call("SomeFunction");
+            Vcall.DefaultTargets.Call("SomeFunction");
         }
 
         [Test]
         public void CallFoo_should_invoke_remote_Foo()
         {
-            Vcall.DefaultTarget.Call("foo");
+            var vtarget = Vcall.GetTargetsAt("StubsHosting");
+            vtarget.Call("Foo");
         }
     }
 }

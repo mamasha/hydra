@@ -26,8 +26,9 @@ namespace l4p.Vlibrary.Tests
         [Test]
         public void LocalHostSingleFunction_should_call_a_function()
         {
-            var vhost = Vcall.NewHosting();
-            var vtarget = Vcall.NewTarget();
+            string key = Guid.NewGuid().ToString("B");
+            var vhost = Vcall.NewHosting(key);
+            var vtarget = Vcall.GetTargetsAt(key);
 
             vhost.AddTarget(Foo);
             vtarget.Call(() => Foo());

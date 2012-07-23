@@ -44,12 +44,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Gateways\HostingPeer.cs" />
-    <Compile Include="Gateways\Proxies.cs" />
-    <Compile Include="Gateways\TargetPeer.cs" />
+    <Compile Include="Discovery\DebugCounters.cs" />
+    <Compile Include="Discovery\Publisher.cs" />
+    <Compile Include="Discovery\Repository.cs" />
+    <Compile Include="Discovery\Subscriber.cs" />
+    <Compile Include="Discovery\ResolvingThread.cs" />
+    <Compile Include="Discovery\WcfDiscovery.cs" />
+    <Compile Include="Core\HostingPeer.cs" />
+    <Compile Include="Discovery\HostResolver.cs" />
+    <Compile Include="Core\TargetPeer.cs" />
+    <Compile Include="Core\WcfProxies.cs" />
     <Compile Include="Helpers\ExceptionHelpers.cs" />
     <Compile Include="Helpers\Helpers.cs" />
     <Compile Include="Helpers\TcpStreamBindng.cs" />
+    <Compile Include="Helpers\TimeHelpers.cs" />
     <Compile Include="HostingConfiguration.cs" />
     <Compile Include="IVtarget.cs" />
     <Compile Include="IVhosting.cs" />
@@ -59,7 +67,8 @@
     <Compile Include="Core\ResolvingDomain.cs" />
     <Compile Include="TargetConfiguration.cs" />
     <Compile Include="Vcall.cs" />
-    <Compile Include="Core\Vimpl.cs" />
+    <Compile Include="Core\VcallSubsystem.cs" />
+    <Compile Include="VcallConfiguration.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

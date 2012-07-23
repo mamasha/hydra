@@ -5,18 +5,15 @@ The contents of this file may not be disclosed to third parties,
 copied or duplicated in any form, in whole or in part.
 */
 
-using System.ServiceModel;
+using System;
 
-namespace l4p.VcallModel.Gateways
+namespace l4p.VcallModel.Discovery
 {
-    [ServiceContract]
-    interface ITargetPeer
+    class Publisher
     {
-        [OperationContract]
-        void UpdateSubjects();
-    }
-
-    class TargetPeer
-    {
+        public IDisposable Subject { get; set; }
+        public string ResolvingKey { get; set; }
+        public Uri CallbackUri { get; set; }
+        public Uri ResolvingScope { get; set; }
     }
 }

@@ -44,7 +44,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DefaultHostingStubsTests.cs" />
+    <Compile Include="DiscoveryTests.cs" />
+    <Compile Include="HostingStubsErrorsTests.cs" />
+    <Compile Include="HostingStubsTests.cs" />
     <Compile Include="SmellTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
