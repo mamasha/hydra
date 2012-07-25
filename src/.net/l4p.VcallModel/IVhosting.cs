@@ -9,7 +9,7 @@ using System;
 
 namespace l4p.VcallModel
 {
-    public interface IVhosting : IDisposable
+    public interface IVhosting : ICommNode
     {
         /// <summary>
         /// Set method to be hosted ...</summary>

@@ -24,7 +24,7 @@ namespace l4p.VcallTests.StubsHosting
                 new ArgumentException(errMsg);
         }
 
-        static void parse_appconfig(HostingConfiguration config)
+        static void parse_appconfig(VcallConfiguration config)
         {
             config.ResolvingKey = ConfigurationManager.AppSettings["ResolvingKey"];
 
@@ -35,7 +35,7 @@ namespace l4p.VcallTests.StubsHosting
             }
         }
 
-        static void parse_command_line(string[] args, HostingConfiguration config)
+        static void parse_command_line(string[] args, VcallConfiguration config)
         {
             int argc = args.Length;
 
@@ -71,7 +71,7 @@ namespace l4p.VcallTests.StubsHosting
                     indx += 2;
                 }
                 else
-                if (token == "-")
+                if (token == "-abrakadabra")
                 {
                 }
                 else
@@ -96,7 +96,7 @@ namespace l4p.VcallTests.StubsHosting
 
         static void main_impl(string[] args)
         {
-            var config = new HostingConfiguration();
+            var config = new VcallConfiguration();
 
             try
             {

@@ -10,7 +10,9 @@ using l4p.VcallModel.Helpers;
 
 namespace l4p.VcallModel.Core
 {
-    class HostingPeer : IHostingPeer, IVhosting
+    class HostingPeer 
+        : CommNode
+        , IHostingPeer, IVhosting
     {
         #region members
 
@@ -18,35 +20,40 @@ namespace l4p.VcallModel.Core
         private static readonly IHelpers Helpers = Utils.New(_log);
 
         private readonly HostingConfiguration _config;
+        private readonly IVcallSubsystem _core;
+
         private readonly string _listeningUri;
 
         #endregion
 
         #region construction
 
-        public HostingPeer(HostingConfiguration config)
+        public HostingPeer(HostingConfiguration config, VcallSubsystem core)
         {
             _config = config;
+            _core = core;
 
             _listeningUri = "soap.tcp://localhost/" + Guid.NewGuid().ToString("B");
         }
 
         #endregion
 
+
+        private void trace(string format, params object[] args)
+        {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Trace("host.{0}: {1}", _tag, msg);
+        }
         #region public api
+
+        public void Start()
+        {
+            _log.Trace("host.{0}: host is started", _tag);
+        }
 
         public string ListeningUri
         {
             get { return _listeningUri; }
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        void IDisposable.Dispose()
-        {
-            throw new NotImplementedException();
         }
 
         #endregion
@@ -56,6 +63,15 @@ namespace l4p.VcallModel.Core
         void IHostingPeer.RegisterTargetPeer(string callbackUri)
         {
             throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region protected api
+
+        protected override void Stop()
+        {
+            _log.Trace("host.{0}: hosting is stopped", _tag);
         }
 
         #endregion
@@ -99,7 +115,7 @@ namespace l4p.VcallModel.Core
 
         void IVhosting.Close()
         {
-            throw new NotImplementedException();
+            _core.CloseHosting(this);
         }
 
         #endregion

@@ -11,7 +11,9 @@ using l4p.VcallModel.Helpers;
 
 namespace l4p.VcallModel.Core
 {
-    class TargetPeer : ITargetPeer, IVtarget
+    class TargetPeer 
+        : CommNode
+        , ITargetPeer, IVtarget
     {
         #region members
 
@@ -19,32 +21,64 @@ namespace l4p.VcallModel.Core
         private static readonly IHelpers Helpers = Utils.New(_log);
 
         private readonly TargetConfiguration _config;
+        private readonly IVcallSubsystem _core;
 
         #endregion
 
         #region construction
 
-        public TargetPeer(TargetConfiguration config)
+        public TargetPeer(TargetConfiguration config, VcallSubsystem core)
         {
             _config = config;
+            _core = core;
+        }
+
+        #endregion
+
+        #region private
+
+        private void trace(string format, params object[] args)
+        {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Trace("target.{0}: {1}", _tag, msg);
+        }
+
+        private void handle_new_hosting(string callbackUri)
+        {
+            _counters.Target_AliveHosts++;
+            trace("'{0}' is alive", callbackUri);
+        }
+
+        private void handle_dead_hosting(string callbackUri)
+        {
+            _counters.Target_AliveHosts--;
+            trace("'{0}' is dead", callbackUri);
         }
 
         #endregion
 
         #region public api
 
+        public void Start()
+        {
+            trace("target is started");
+        }
+
         public void OnHostingPeerDiscovery(string callbackUri, bool alive)
         {
-            _log.Trace("[{0}] '{1}' is {2}", _config.ResolvingKey, callbackUri, alive ? "alive" : "dead");
+            if (alive)
+                handle_new_hosting(callbackUri);
+            else
+                handle_dead_hosting(callbackUri);
         }
 
         #endregion
 
-        #region IDisposable
+        #region protected api
 
-        void IDisposable.Dispose()
+        protected override void Stop()
         {
-            throw new NotImplementedException();
+            _log.Trace("target.{0}: target is stopped", _tag);
         }
 
         #endregion
@@ -85,7 +119,7 @@ namespace l4p.VcallModel.Core
 
         void IVtarget.Close()
         {
-            throw new NotImplementedException();
+            _core.CloseTarget(this);
         }
 
         #endregion

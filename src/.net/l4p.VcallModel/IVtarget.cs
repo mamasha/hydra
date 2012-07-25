@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 
 namespace l4p.VcallModel
 {
-    public interface IVtarget : IDisposable
+    public interface IVtarget : ICommNode
     {
         /// <summary>
         /// Call a method out there ...</summary>

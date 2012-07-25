@@ -54,12 +54,13 @@ namespace l4p.VcallModel.Helpers
         private static void build_detaild_message(Exception ex, string errMsg, StringBuilder sb)
         {
             sb
+                .StartWithNewLine()
                 .Append(errMsg);
 
             while (ex != null)
             {
                 sb
-                    .AppendLine()
+                    .StartWithNewLine()
                     .AppendFormat("   -----> {0}: {1}", ex.GetType().FullName, ex.Message);
 
                 ex = ex.InnerException;
@@ -78,14 +79,14 @@ namespace l4p.VcallModel.Helpers
             if (ex.InnerException != null)
             {
                 sb
-                    .AppendLine()
+                    .StartWithNewLine()
                     .AppendFormat("   ----- {0}: {1} -----", ex.GetType().FullName, ex.Message);
             }
 
             string stackTrace = ex.StackTrace;
 
             sb
-                .AppendLine()
+                .StartWithNewLine()
                 .Append(stackTrace);
         }
 

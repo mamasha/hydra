@@ -100,7 +100,7 @@ namespace l4p.VcallModel.Discovery
             var timeout = Helpers.MakeTimeSpan(_config.Timeouts.DiscoveryClosing);
 
             Helpers.TimedAction(
-                () => _announcementService.Open(timeout), "Failed to open announcement service in {0} millis", timeout.TotalMilliseconds);
+                () => _announcementService.Close(timeout), "Failed to close announcement service in {0} millis", timeout.TotalMilliseconds);
 
             _log.Info("WCF discovery module is stopped");
         }

@@ -14,7 +14,7 @@ namespace l4p.VcallModel.Discovery
 {
     class Subscriber
     {
-        public IDisposable Subject { get; set; }
+        public ICommNode Node { get; set; }
         public string ResolvingKey { get; set; }
         public HostPeerNotification Notify { get; set; }
         public Uri ResolvingScope { get; set; }

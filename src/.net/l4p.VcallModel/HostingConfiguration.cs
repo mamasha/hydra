@@ -12,9 +12,5 @@ namespace l4p.VcallModel
         /// <summary>
         /// TCP port to listen on for incoming calls </summary>
         public int? Port { get; set; }
-
-        /// <summary>
-        /// The resolving key of the host </summary>
-        public string ResolvingKey { get; set; }
     }
 }

@@ -8,6 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Collections.Generic;
 using System.ServiceModel.Discovery;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.Helpers;
 
 namespace l4p.VcallModel.Discovery
@@ -26,23 +27,24 @@ namespace l4p.VcallModel.Discovery
         void Start();
         void Stop();
 
-        DebugCounters Counters { get; }
+        // user arbitrary threads
 
-        // user arbitrary thread
+        void PublishHostingPeer(string callbackUri, ICommNode node);
+        void SubscribeTargetPeer(HostPeerNotification notify, ICommNode node);
 
-        void PublishHostingPeer(string resolvingKey, string callbackUri, IDisposable publisher);
-        void SubscribeTargetPeer(string resolvingKey, HostPeerNotification notify, IDisposable subscriber);
-        void CancelPublishedHosting(Publisher publisher);
-        void CancelSubscribedTarget(Subscriber subscriber);
+        void CancelPublishedHosting(ICommNode node);
+        void CancelSubscribedTarget(ICommNode node);
 
-        // worker thread
+        DebugCounters DebugCounters { get; }
+
+        // WCF arbitrary threads
+
+        void HandleHelloMessage(EndpointDiscoveryMetadata edm);
+
+        // resolver thread
 
         void SendHelloMessages();
         void GenerateByeNotifications(DateTime now);
-
-        // WCF arbitrary thread
-
-        void HandleHelloMessage(EndpointDiscoveryMetadata edm);
     }
 
     class HostResolver : IHostResolver
@@ -53,6 +55,7 @@ namespace l4p.VcallModel.Discovery
         private static readonly IHelpers Helpers = Utils.New(_log);
 
         private readonly VcallConfiguration _config;
+        private readonly Uri _resolvingScope;
 
         private readonly Object _mutex;
         private readonly IRepository _repo;
@@ -75,6 +78,9 @@ namespace l4p.VcallModel.Discovery
         {
             _config = config;
 
+            _resolvingScope = make_resolving_scope(config);
+            trace("Resolving scope URI is '{0}'", _resolvingScope.ToString());
+
             _mutex = new Object();
             _repo = new Repository();
             _counters = new DebugCounters();
@@ -87,13 +93,19 @@ namespace l4p.VcallModel.Discovery
 
         #region private
 
-        private Uri make_resolving_scope(string resolvingKey)
+        private void trace(string format, params object[] args)
         {
-            string resolvingScope = String.Format(_config.DiscoveryScopePattern, resolvingKey.ToLowerInvariant());
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Trace("{0}: {1}", _config.ResolvingKey, msg);
+        }
+
+        private static Uri make_resolving_scope(VcallConfiguration config)
+        {
+            string resolvingScope = String.Format(config.DiscoveryScopePattern, config.ResolvingKey.ToLowerInvariant());
 
             return Helpers.TryCatch(
                 () => new Uri(resolvingScope),
-                ex => Helpers.ThrowNew<HostResolverException>(ex, "resolvingKye '{0}' is invalid; resulting uri is '{1}'", resolvingKey, resolvingScope));
+                ex => Helpers.ThrowNew<HostResolverException>(ex, "resolvingKye '{0}' is invalid; resulting uri is '{1}'", config.ResolvingKey, resolvingScope));
         }
 
         #endregion
@@ -116,25 +128,18 @@ namespace l4p.VcallModel.Discovery
             _log.Info("Host resolving service is stopped");
         }
 
-        DebugCounters IHostResolver.Counters
-        {
-            get { return _counters; }
-        }
-
-        void IHostResolver.PublishHostingPeer(string resolvingKey, string callbackUri, IDisposable subject)
+        void IHostResolver.PublishHostingPeer(string callbackUri, ICommNode node)
         {
             var uri = Helpers.TryCatch(
                 () => new Uri(callbackUri),
                 ex => Helpers.ThrowNew<HostResolverException>(ex, "Failed to parse callbackUri '{0}'", callbackUri));
 
-            Uri resolvingScope = make_resolving_scope(resolvingKey);
-
             var publisher = new Publisher
             {
-                ResolvingKey = resolvingKey,
+                ResolvingKey = _config.ResolvingKey,
                 CallbackUri = uri,
-                Subject = subject,
-                ResolvingScope = resolvingScope
+                Node = node,
+                ResolvingScope = _resolvingScope
             };
 
             lock (_mutex)
@@ -142,19 +147,17 @@ namespace l4p.VcallModel.Discovery
                 _repo.Add(publisher);
             }
 
-            _log.Trace("[{0}] publisher at '{1}' is added", resolvingKey, callbackUri);
+            trace("host.{0} is published at '{1}'", node.Tag, callbackUri);
         }
 
-        void IHostResolver.SubscribeTargetPeer(string resolvingKey, HostPeerNotification notify, IDisposable subject)
+        void IHostResolver.SubscribeTargetPeer(HostPeerNotification notify, ICommNode node)
         {
-            Uri resolvingScope = make_resolving_scope(resolvingKey);
-
             var subscriber = new Subscriber
             {
-                ResolvingKey = resolvingKey,
+                ResolvingKey = _config.ResolvingKey,
                 Notify = notify,
-                Subject = subject,
-                ResolvingScope = resolvingScope,
+                Node = node,
+                ResolvingScope = _resolvingScope,
             };
 
             lock (_mutex)
@@ -162,62 +165,54 @@ namespace l4p.VcallModel.Discovery
                 _repo.Add(subscriber);
             }
 
-            _log.Trace("[{0}] a listener is added", resolvingKey);
+            trace("target.{0} is subscribed", node.Tag);
         }
 
-        void IHostResolver.CancelPublishedHosting(Publisher publisher)
+        void IHostResolver.CancelPublishedHosting(ICommNode node)
         {
-            lock (_mutex)
-            {
-                _repo.Remove(publisher);
-            }
-
-            _log.Trace("[{0}] published calbackUri '{1}' is canceled", publisher.ResolvingKey, publisher.CallbackUri);
-        }
-
-        void IHostResolver.CancelSubscribedTarget(Subscriber subscriber)
-        {
-            lock (_mutex)
-            {
-                _repo.Remove(subscriber);
-            }
-
-            _log.Trace("[{0}] subscribed target is canceled", subscriber.ResolvingKey);
-        }
-
-        void IHostResolver.SendHelloMessages()
-        {
-            var publishers = _repo.GetPublishers();
-
-            foreach (var publisher in publishers)
-            {
-                var edm = new EndpointDiscoveryMetadata { Address = _discovery.Address };
-
-                edm.ListenUris.Add(publisher.CallbackUri);
-                edm.Scopes.Add(publisher.ResolvingScope);
-
-                _discovery.SendHelloMessage(edm);
-                _counters.HelloMsgsSent++;
-            }
-        }
-
-        void IHostResolver.GenerateByeNotifications(DateTime now)
-        {
-            var aliveSpan = Helpers.MakeTimeSpan(_config.Timeouts.ServiceAliveTimeSpan);
-            var subscribers = _repo.GetSubscribers();
-            var notifications = new List<Action>();
+            Publisher publisher;
 
             lock (_mutex)
             {
-                foreach (var subscriber in subscribers)
-                {
-                    subscriber.RemoveDeadCallbacks(now, aliveSpan, notifications);
-                }
-
-                _counters.ByeNotificationsProduced += notifications.Count;
+                publisher = _repo.RemovePublisher(node);
             }
 
-            notifications.ForEach(notify => notify.Invoke());
+            if (publisher == null)
+            {
+                _log.Warn("host.{0} is not found", node.Tag);
+                return;
+            }
+
+            trace("host.{0} is canceled", node.Tag);
+        }
+
+        void IHostResolver.CancelSubscribedTarget(ICommNode node)
+        {
+            Subscriber subscriber;
+
+            lock (_mutex)
+            {
+                subscriber = _repo.RemoveSubscriber(node);
+            }
+
+            if (subscriber == null)
+            {
+                _log.Warn("target.{0} is not found", node.Tag);
+                return;
+            }
+
+            trace("target.{0} is canceled", node.Tag);
+        }
+
+        DebugCounters IHostResolver.DebugCounters
+        {
+            get
+            {
+                var counters = new DebugCounters();
+                counters.Accumulate(_counters);
+
+                return counters;
+            }
         }
 
         void IHostResolver.HandleHelloMessage(EndpointDiscoveryMetadata edm)
@@ -243,24 +238,78 @@ namespace l4p.VcallModel.Discovery
                 Uri resolvingScope = edm.Scopes[0];
                 string callbackUri = edm.ListenUris[0].ToString();
 
+                if (resolvingScope != _resolvingScope)
+                {
+                    _counters.HelloMsgsFiltered++;
+                    _counters.OtherHelloMsgsReceived++;
+                    return;
+                }
+
                 var subscribers = _repo.GetSubscribers();
 
+                // collect to-be-done notifications
                 foreach (var subscriber in subscribers)
                 {
-                    if (subscriber.ResolvingScope != resolvingScope)
-                    {
-                        _counters.OtherHelloMsgsReceived++;
-                        continue;
-                    }
-
-                    _counters.MyHelloMsgsReceived++;
                     subscriber.GotAliveCallback(callbackUri, DateTime.Now, notifications);
                 }
 
+                _counters.MyHelloMsgsReceived++;
                 _counters.HelloNotificationsProduced += notifications.Count;
             }
 
+            // execute collected to-be-done notifications
             notifications.ForEach(notify => notify.Invoke());
+
+            if (notifications.Count > 0)
+            {
+                trace("{0} hello notifications are generated", notifications.Count);
+            }
+        }
+
+        void IHostResolver.SendHelloMessages()
+        {
+            var publishers = _repo.GetPublishers();
+
+            foreach (var publisher in publishers)
+            {
+                var edm = new EndpointDiscoveryMetadata { Address = _discovery.Address };
+
+                edm.ListenUris.Add(publisher.CallbackUri);
+                edm.Scopes.Add(publisher.ResolvingScope);
+
+                _discovery.SendHelloMessage(edm);
+                _counters.HelloMsgsSent++;
+            }
+
+            if (publishers.Length > 0)
+            {
+                trace("{0} hello messages are sent", publishers.Length);
+            }
+        }
+
+        void IHostResolver.GenerateByeNotifications(DateTime now)
+        {
+            var aliveSpan = Helpers.MakeTimeSpan(_config.Timeouts.ServiceAliveTimeSpan);
+            var subscribers = _repo.GetSubscribers();
+
+            var notifications = new List<Action>();
+
+            lock (_mutex)
+            {
+                foreach (var subscriber in subscribers)
+                {
+                    subscriber.RemoveDeadCallbacks(now, aliveSpan, notifications);
+                }
+
+                _counters.ByeNotificationsProduced += notifications.Count;
+            }
+
+            notifications.ForEach(notify => notify.Invoke());
+
+            if (notifications.Count > 0)
+            {
+                trace("{0} bye notifications are generated", notifications.Count);
+            }
         }
 
         #endregion

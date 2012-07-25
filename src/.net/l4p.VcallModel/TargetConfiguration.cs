@@ -20,10 +20,6 @@ namespace l4p.VcallModel
         /// TCP port to connect to  </summary>
         public int? Port { get; set; }
 
-        /// <summary>
-        /// The resolving host key </summary>
-        public string ResolvingKey { get; set; }
-
         public NonRegisteredCallPolicy NonRegisteredCall { get; set; }
     }
 }

@@ -6,6 +6,7 @@ namespace l4p.VcallModel
     {
         public string ResolvingKey { get; set; }
         public string DiscoveryScopePattern { get; set; }
+        public int? Port { get; set; }
 
         public Timeouts Timeouts { get; set; }
 

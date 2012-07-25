@@ -12,8 +12,7 @@ namespace l4p.VcallTests.StubsHosting
 
         public static void HostStubs()
         {
-            var host = Vcall.NewHosting("StubsHosting");
-
+            var host = Vcall.NewHosting();
             host.AddTarget(Foo);
         }
     }

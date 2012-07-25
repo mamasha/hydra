@@ -17,8 +17,8 @@ namespace l4p.VcallModel.Discovery
         void Add(Publisher publisher);
         void Add(Subscriber subscriber);
 
-        void Remove(Publisher publisher);
-        void Remove(Subscriber subscriber);
+        Publisher RemovePublisher(ICommNode node);
+        Subscriber RemoveSubscriber(ICommNode node);
 
         Publisher[] GetPublishers();
         Subscriber[] GetSubscribers();
@@ -64,24 +64,40 @@ namespace l4p.VcallModel.Discovery
             _subscribers = subscribers;
         }
 
-        public void Remove(Publisher subject)
+        public Publisher RemovePublisher(ICommNode node)
         {
+            Publisher firstRef = _publishers.Find(
+                publisher => ReferenceEquals(publisher.Node, node));
+
+            if (firstRef == null)
+                return null;
+
             var publishers =
                 from publisher in _publishers
-                where !ReferenceEquals(publisher.Subject, subject)
+                where !ReferenceEquals(publisher.Node, node)
                 select publisher;
 
             _publishers = publishers.ToList();
+
+            return firstRef;
         }
 
-        public void Remove(Subscriber subject)
+        public Subscriber RemoveSubscriber(ICommNode node)
         {
+            Subscriber firstRef = _subscribers.Find(
+                subscriber => ReferenceEquals(subscriber.Node, node));
+
+            if (firstRef == null)
+                return null;
+
             var subscribers =
                 from subscriber in _subscribers
-                where !ReferenceEquals(subscriber.Subject, subject)
+                where !ReferenceEquals(subscriber.Node, node)
                 select subscriber;
 
             _subscribers = subscribers.ToList();
+
+            return firstRef;
         }
 
         Publisher[] IRepository.GetPublishers()

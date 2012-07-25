@@ -11,7 +11,7 @@ namespace l4p.VcallModel.Discovery
 {
     class Publisher
     {
-        public IDisposable Subject { get; set; }
+        public ICommNode Node { get; set; }
         public string ResolvingKey { get; set; }
         public Uri CallbackUri { get; set; }
         public Uri ResolvingScope { get; set; }
