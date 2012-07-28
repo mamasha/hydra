@@ -12,7 +12,7 @@ namespace l4p.VcallModel.Helpers
         ILogger _log { get; }
     }
 
-    class Utils : IHelpers
+    class LoggedHelpers : IHelpers
     {
         #region members
 
@@ -25,10 +25,10 @@ namespace l4p.VcallModel.Helpers
         public static IHelpers New(ILogger log)
         {
             return 
-                new Utils(log);
+                new LoggedHelpers(log);
         }
 
-        private Utils(ILogger log)
+        private LoggedHelpers(ILogger log)
         {
             _log = log;
         }

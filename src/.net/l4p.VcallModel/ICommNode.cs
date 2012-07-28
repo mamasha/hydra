@@ -5,6 +5,7 @@ The contents of this file may not be disclosed to third parties,
 copied or duplicated in any form, in whole or in part.
 */
 
+using System;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Helpers;
 
@@ -22,6 +23,6 @@ namespace l4p.VcallModel
 
         /// <summary>
         /// Use Close() instead </summary>
-        void Stop(Internal access);
+        void Stop(Internal access, TimeSpan timeout);
     }
 }

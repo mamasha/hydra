@@ -55,7 +55,7 @@ namespace l4p.VcallModel.Helpers
             }
         }
 
-        public static TimeSpan MakeTimeSpan(this IHelpers Helpers, int milliseconds)
+        public static TimeSpan TimeSpanFromMillis(this IHelpers Helpers, int milliseconds)
         {
             return
                 new TimeSpan(0, 0, 0, 0, milliseconds);

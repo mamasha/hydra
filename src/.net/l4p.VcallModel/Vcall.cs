@@ -18,12 +18,19 @@ namespace l4p.VcallModel
         public VcallException(string message, Exception inner) : base(message, inner) { }
     }
 
+    public class InternalException : Exception
+    {
+        public InternalException() { }
+        public InternalException(string message) : base(message) { }
+        public InternalException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public sealed class Vcall
     {
         #region members
 
         private static readonly ILogger _log = Logger.New<Vcall>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
 
         private static readonly object _startMutex = new Object();
 
@@ -120,7 +127,7 @@ namespace l4p.VcallModel
             catch (Exception ex)
             {
                 throw
-                    Helpers.MakeNew<VcallException>(ex, "failed to create hosting");
+                    Helpers.MakeNew<VcallException>(ex, "Failed to create hosting");
             }
         }
 
@@ -134,7 +141,7 @@ namespace l4p.VcallModel
             catch (Exception ex)
             {
                 throw
-                    Helpers.MakeNew<VcallException>(ex, "failed to create target");
+                    Helpers.MakeNew<VcallException>(ex, "Failed to create target");
             }
         }
 
@@ -253,12 +260,24 @@ namespace l4p.VcallModel
 
         /// <summary>
         /// Create new hosting model with default parameters ... </summary>
-        /// <returns></returns>
+        /// <returns>New active hosting that is ready to host functions</returns>
         public static IVhosting NewHosting()
         {
             assert_services_are_started();
             return
                 new_hosting(new HostingConfiguration());
+        }
+
+        /// <summary>
+        /// Create new hosting model with default parameters ... </summary>
+        /// <param name="visibilityScope">Hosting visibility scope (usually local host or resolving domain)</param>
+        /// <returns>New active hosting that is ready to host functions</returns>
+        public static IVhosting NewHosting(HostingVisibilityScope visibilityScope)
+        {
+            assert_services_are_started();
+            var config = new HostingConfiguration {VisibilityScope = visibilityScope};
+            return
+                new_hosting(config);
         }
 
         /// <summary>

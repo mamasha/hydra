@@ -15,13 +15,16 @@ namespace l4p.VcallModel.Discovery
     interface IRepository
     {
         void Add(Publisher publisher);
-        void Add(Subscriber subscriber);
+        string[] Add(Subscriber subscriber);
 
         Publisher RemovePublisher(ICommNode node);
         Subscriber RemoveSubscriber(ICommNode node);
 
         Publisher[] GetPublishers();
         Subscriber[] GetSubscribers();
+
+        Subscriber[] AddHelloMessage(string callbackUri, DateTime lastSeen);
+        List<Action> RemoveDeadHosts(DateTime now, int alivePeriod);
     }
 
     class Repository : IRepository
@@ -29,10 +32,11 @@ namespace l4p.VcallModel.Discovery
         #region members
 
         private static readonly ILogger _log = Logger.New<Repository>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
 
         private List<Publisher> _publishers;
         private List<Subscriber> _subscribers;
+        private Dictionary<string, DateTime> _aliveHosts;
 
         #endregion
 
@@ -42,6 +46,7 @@ namespace l4p.VcallModel.Discovery
         {
             _publishers = new List<Publisher>();
             _subscribers = new List<Subscriber>();
+            _aliveHosts = new Dictionary<string, DateTime>();
         }
 
         #endregion
@@ -50,52 +55,64 @@ namespace l4p.VcallModel.Discovery
 
         void IRepository.Add(Publisher publisher)
         {
-            var publishers = new List<Publisher>(_publishers);
-            publishers.Add(publisher);
+            var publishers = _publishers;
 
-            _publishers = publishers;
+            var newPublishers = new List<Publisher>(publishers);
+            newPublishers.Add(publisher);
+
+            _publishers = newPublishers;
         }
 
-        void IRepository.Add(Subscriber subscriber)
+        string[] IRepository.Add(Subscriber subscriber)
         {
-            var subscribers = new List<Subscriber>(_subscribers);
-            subscribers.Add(subscriber);
+            var subscribers = _subscribers;
+            var aliveHosts = _aliveHosts;
 
-            _subscribers = subscribers;
+            var newSubscribers = new List<Subscriber>(subscribers);
+            newSubscribers.Add(subscriber);
+
+            _subscribers = newSubscribers;
+
+            return 
+                aliveHosts.Keys.ToArray();
         }
 
         public Publisher RemovePublisher(ICommNode node)
         {
-            Publisher firstRef = _publishers.Find(
+            var publishers = _publishers;
+
+            Publisher firstRef = publishers.Find(
                 publisher => ReferenceEquals(publisher.Node, node));
 
             if (firstRef == null)
                 return null;
 
-            var publishers =
-                from publisher in _publishers
+            var newPublishers =
+                from publisher in publishers
                 where !ReferenceEquals(publisher.Node, node)
                 select publisher;
 
-            _publishers = publishers.ToList();
+            _publishers = newPublishers.ToList();
 
             return firstRef;
         }
 
         public Subscriber RemoveSubscriber(ICommNode node)
         {
-            Subscriber firstRef = _subscribers.Find(
+            var subscribers = _subscribers;
+
+            Subscriber firstRef = subscribers.Find(
                 subscriber => ReferenceEquals(subscriber.Node, node));
 
             if (firstRef == null)
                 return null;
 
-            var subscribers =
-                from subscriber in _subscribers
+            var newSubscribers =
+                from subscriber in subscribers
                 where !ReferenceEquals(subscriber.Node, node)
                 select subscriber;
 
-            _subscribers = subscribers.ToList();
+            _subscribers = newSubscribers.ToList();
 
             return firstRef;
         }
@@ -114,6 +131,58 @@ namespace l4p.VcallModel.Discovery
 
             return
                 subscribers.ToArray();
+        }
+
+        Subscriber[] IRepository.AddHelloMessage(string callbackUri, DateTime lastSeen)
+        {
+            var subscribers = _subscribers;
+            var aliveHosts = _aliveHosts;
+
+            if (aliveHosts.ContainsKey(callbackUri))
+            {
+                aliveHosts[callbackUri] = lastSeen;
+                return null;
+            }
+
+            var newAliveHosts = new Dictionary<string, DateTime>(aliveHosts);
+            newAliveHosts[callbackUri] = lastSeen;
+
+            _aliveHosts = aliveHosts;
+
+            return 
+                subscribers.ToArray();
+        }
+
+        List<Action> IRepository.RemoveDeadHosts(DateTime now, int alivePeriod)
+        {
+            var timeout = Helpers.TimeSpanFromMillis(alivePeriod);
+            var notifications = new List<Action>();
+
+            var subscribers = _subscribers;
+            var aliveHosts = _aliveHosts;
+
+            var newAliveHosts = new Dictionary<string, DateTime>();
+
+            foreach (var pair in aliveHosts)
+            {
+                string callbackUri = pair.Key;
+                DateTime lastSeen = pair.Value;
+
+                if (now - lastSeen < timeout)
+                {
+                    newAliveHosts.Add(callbackUri, lastSeen);
+                    continue;
+                }
+
+                foreach (var subscriber_ in subscribers)
+                {
+                    var subscriber = subscriber_;
+                    notifications.Add(() => subscriber.Notify(callbackUri, false));
+                }
+            }
+
+            _aliveHosts = newAliveHosts;
+            return notifications;
         }
 
         #endregion

@@ -28,9 +28,9 @@ namespace l4p.VcallModel.Discovery
         #region members
 
         private static readonly ILogger _log = Logger.New<WcfDiscovery>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
 
-        private VcallConfiguration _config;
+        private HostResolverConfiguration _config;
         private IHostResolver _resolver;
 
         private readonly ServiceEndpoint _serviceEndpoint;
@@ -41,7 +41,7 @@ namespace l4p.VcallModel.Discovery
 
         #region construction
 
-        public WcfDiscovery(IHostResolver resolver, VcallConfiguration config)
+        public WcfDiscovery(IHostResolver resolver, HostResolverConfiguration config)
         {
             _config = config;
             _resolver = resolver;
@@ -66,7 +66,8 @@ namespace l4p.VcallModel.Discovery
         {
             try
             {
-                _resolver.HandleHelloMessage(edm);
+                var lastSeen = DateTime.Now;
+                _resolver.HandleHelloMessage(edm, lastSeen);
             }
             catch (Exception ex)
             {
@@ -85,7 +86,7 @@ namespace l4p.VcallModel.Discovery
 
         void IWcfDiscovery.Start()
         {
-            var timeout = Helpers.MakeTimeSpan(_config.Timeouts.DiscoveryOpening);
+            var timeout = Helpers.TimeSpanFromMillis(_config.DiscoveryOpening);
 
             Helpers.TimedAction(
                 () => _announcementService.Open(timeout), "Failed to open announcement service in {0} millis", timeout.TotalMilliseconds);
@@ -97,7 +98,7 @@ namespace l4p.VcallModel.Discovery
 
         void IWcfDiscovery.Stop()
         {
-            var timeout = Helpers.MakeTimeSpan(_config.Timeouts.DiscoveryClosing);
+            var timeout = Helpers.TimeSpanFromMillis(_config.DiscoveryClosing);
 
             Helpers.TimedAction(
                 () => _announcementService.Close(timeout), "Failed to close announcement service in {0} millis", timeout.TotalMilliseconds);

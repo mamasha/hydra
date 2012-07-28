@@ -13,48 +13,14 @@ using l4p.VcallModel.Helpers;
 
 namespace l4p.VcallModel.Discovery
 {
-    delegate void HostPeerNotification(string callbackUri, bool alive);
-
-    class HostResolverException : Exception
-    {
-        public HostResolverException() { }
-        public HostResolverException(string message) : base(message) { }
-        public HostResolverException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    interface IHostResolver
-    {
-        void Start();
-        void Stop();
-
-        // user arbitrary threads
-
-        void PublishHostingPeer(string callbackUri, ICommNode node);
-        void SubscribeTargetPeer(HostPeerNotification notify, ICommNode node);
-
-        void CancelPublishedHosting(ICommNode node);
-        void CancelSubscribedTarget(ICommNode node);
-
-        DebugCounters DebugCounters { get; }
-
-        // WCF arbitrary threads
-
-        void HandleHelloMessage(EndpointDiscoveryMetadata edm);
-
-        // resolver thread
-
-        void SendHelloMessages();
-        void GenerateByeNotifications(DateTime now);
-    }
-
     class HostResolver : IHostResolver
     {
         #region members
 
         private static readonly ILogger _log = Logger.New<HostResolver>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
 
-        private readonly VcallConfiguration _config;
+        private readonly HostResolverConfiguration _config;
         private readonly Uri _resolvingScope;
 
         private readonly Object _mutex;
@@ -68,24 +34,24 @@ namespace l4p.VcallModel.Discovery
 
         #region construction
 
-        public static IHostResolver New(VcallConfiguration config)
+        public static IHostResolver New(HostResolverConfiguration config)
         {
             return
                 new HostResolver(config);
         }
 
-        private HostResolver(VcallConfiguration config)
+        private HostResolver(HostResolverConfiguration config)
         {
             _config = config;
 
-            _resolvingScope = make_resolving_scope(config);
+            _resolvingScope = make_resolving_scope();
             trace("Resolving scope URI is '{0}'", _resolvingScope.ToString());
 
             _mutex = new Object();
             _repo = new Repository();
             _counters = new DebugCounters();
 
-            _thread = new ResolvingThread(this, config);
+            _thread = new ResolvingThread(this, config.HelloMessageGap);
             _discovery = new WcfDiscovery(this, config);
         }
 
@@ -99,13 +65,33 @@ namespace l4p.VcallModel.Discovery
             _log.Trace("{0}: {1}", _config.ResolvingKey, msg);
         }
 
-        private static Uri make_resolving_scope(VcallConfiguration config)
+        private Uri make_resolving_scope()
         {
-            string resolvingScope = String.Format(config.DiscoveryScopePattern, config.ResolvingKey.ToLowerInvariant());
+            string resolvingScope = String.Format(_config.DiscoveryScopePattern, _config.ResolvingKey.ToLowerInvariant());
 
             return Helpers.TryCatch(
                 () => new Uri(resolvingScope),
-                ex => Helpers.ThrowNew<HostResolverException>(ex, "resolvingKye '{0}' is invalid; resulting uri is '{1}'", config.ResolvingKey, resolvingScope));
+                ex => Helpers.ThrowNew<HostResolverException>(ex, "resolvingKye '{0}' is invalid; resulting uri is '{1}'", _config.ResolvingKey, resolvingScope));
+        }
+
+        private void send_hello_message_of(Publisher publisher)
+        {
+            var edm = new EndpointDiscoveryMetadata { Address = _discovery.Address };
+
+            edm.ListenUris.Add(publisher.CallbackUri);
+            edm.Scopes.Add(publisher.ResolvingScope);
+
+            _discovery.SendHelloMessage(edm);
+
+            lock (_mutex)
+            {
+                _counters.HelloMsgsSent++;
+            }
+        }
+
+        private void update_subscriber(Subscriber subscriber)
+        {
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -147,6 +133,8 @@ namespace l4p.VcallModel.Discovery
                 _repo.Add(publisher);
             }
 
+            _thread.PostAction(() => send_hello_message_of(publisher));
+
             trace("host.{0} is published at '{1}'", node.Tag, callbackUri);
         }
 
@@ -164,6 +152,8 @@ namespace l4p.VcallModel.Discovery
             {
                 _repo.Add(subscriber);
             }
+
+            _thread.PostAction(() => update_subscriber(subscriber));
 
             trace("target.{0} is subscribed", node.Tag);
         }
@@ -215,9 +205,10 @@ namespace l4p.VcallModel.Discovery
             }
         }
 
-        void IHostResolver.HandleHelloMessage(EndpointDiscoveryMetadata edm)
+        void IHostResolver.HandleHelloMessage(EndpointDiscoveryMetadata edm, DateTime lastSeen)
         {
-            var notifications = new List<Action>();
+            Subscriber[] subscribers;
+            string callbackUri;
 
             lock (_mutex)
             {
@@ -236,7 +227,7 @@ namespace l4p.VcallModel.Discovery
                 }
 
                 Uri resolvingScope = edm.Scopes[0];
-                string callbackUri = edm.ListenUris[0].ToString();
+                callbackUri = edm.ListenUris[0].ToString();
 
                 if (resolvingScope != _resolvingScope)
                 {
@@ -245,25 +236,22 @@ namespace l4p.VcallModel.Discovery
                     return;
                 }
 
-                var subscribers = _repo.GetSubscribers();
-
-                // collect to-be-done notifications
-                foreach (var subscriber in subscribers)
-                {
-                    subscriber.GotAliveCallback(callbackUri, DateTime.Now, notifications);
-                }
-
                 _counters.MyHelloMsgsReceived++;
-                _counters.HelloNotificationsProduced += notifications.Count;
+
+                subscribers = _repo.AddHelloMessage(callbackUri, lastSeen);
+
+                if (subscribers == null)
+                    return;
+
+                _counters.HelloNotificationsProduced += subscribers.Length;
             }
 
-            // execute collected to-be-done notifications
-            notifications.ForEach(notify => notify.Invoke());
-
-            if (notifications.Count > 0)
+            foreach (var subscriber in subscribers)
             {
-                trace("{0} hello notifications are generated", notifications.Count);
+                subscriber.Notify(callbackUri, true);
             }
+
+            trace("{0} hello notifications are generated", subscribers.Length);
         }
 
         void IHostResolver.SendHelloMessages()
@@ -272,13 +260,7 @@ namespace l4p.VcallModel.Discovery
 
             foreach (var publisher in publishers)
             {
-                var edm = new EndpointDiscoveryMetadata { Address = _discovery.Address };
-
-                edm.ListenUris.Add(publisher.CallbackUri);
-                edm.Scopes.Add(publisher.ResolvingScope);
-
-                _discovery.SendHelloMessage(edm);
-                _counters.HelloMsgsSent++;
+                send_hello_message_of(publisher);
             }
 
             if (publishers.Length > 0)
@@ -289,19 +271,11 @@ namespace l4p.VcallModel.Discovery
 
         void IHostResolver.GenerateByeNotifications(DateTime now)
         {
-            var aliveSpan = Helpers.MakeTimeSpan(_config.Timeouts.ServiceAliveTimeSpan);
-            var subscribers = _repo.GetSubscribers();
-
-            var notifications = new List<Action>();
+            List<Action> notifications;
 
             lock (_mutex)
             {
-                foreach (var subscriber in subscribers)
-                {
-                    subscriber.RemoveDeadCallbacks(now, aliveSpan, notifications);
-                }
-
-                _counters.ByeNotificationsProduced += notifications.Count;
+                notifications = _repo.RemoveDeadHosts(now, _config.ByeMessageGap);
             }
 
             notifications.ForEach(notify => notify.Invoke());

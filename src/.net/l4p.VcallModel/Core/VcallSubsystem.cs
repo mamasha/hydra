@@ -6,13 +6,17 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.ServiceModel;
 using l4p.VcallModel.Discovery;
 using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Hosting;
+using l4p.VcallModel.Target;
 
 namespace l4p.VcallModel.Core
 {
     interface IVcallSubsystem
     {
+        VcallConfiguration Config { get; }
         IHostResolver Resolver { get; }
 
         void Start();
@@ -32,9 +36,11 @@ namespace l4p.VcallModel.Core
         #region members
 
         private static readonly ILogger _log = Logger.New<VcallSubsystem>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
         private static readonly Internal _internalAccess = new Internal();
 
+        private readonly Object _mutex;
+        private readonly VcallConfiguration _vconfig;
         private readonly IRepository _repo;
         private readonly IHostResolver _resolver;
 
@@ -50,11 +56,38 @@ namespace l4p.VcallModel.Core
                 new VcallSubsystem(config);
         }
 
-        private VcallSubsystem(VcallConfiguration config)
+        private VcallSubsystem(VcallConfiguration vconfig)
         {
+            var resolvingConfig = new HostResolverConfiguration
+            {
+                ResolvingKey = vconfig.ResolvingKey,
+                HelloMessageGap = vconfig.Timeouts.HelloMessageGap,
+                ByeMessageGap = vconfig.Timeouts.ByeMessageGap,
+                DiscoveryScopePattern = vconfig.DiscoveryScopePattern,
+                DiscoveryOpening = vconfig.Timeouts.DiscoveryOpening,
+                DiscoveryClosing = vconfig.Timeouts.DiscoveryClosing
+            };
+
+            _mutex = new Object();
+            _vconfig = vconfig;
             _repo = Repository.New();
-            _resolver = HostResolver.New(config);
+            _resolver = HostResolver.New(resolvingConfig);
             _counters = new DebugCounters();
+        }
+
+        private void close_comm_node(ICommNode node)
+        {
+            var timeout = new TimeSpan(_vconfig.Timeouts.HostingClosing);
+            node.Stop(_internalAccess, timeout);
+        }
+
+        protected string make_dynamic_uri(string tag)
+        {
+            string hostname = "localhost";
+            int port = _vconfig.Port ?? Helpers.FindAvailableTcpPort();
+
+            return
+                String.Format(_vconfig.HostingUriPattern, hostname, port, tag);
         }
 
         #endregion
@@ -76,9 +109,86 @@ namespace l4p.VcallModel.Core
             return counters;
         }
 
+        private IVhosting new_hostring(HostingConfiguration config)
+        {
+            var timeout = Helpers.TimeSpanFromMillis(_vconfig.Timeouts.HostingOpening);
+            int addressInUseRetries = 0;
+
+            for (;;)
+            {
+                var hosting = new HostingPeer(config, this);
+                string uri = make_dynamic_uri(hosting.Tag);
+
+                try
+                {
+                    hosting.Start(uri, timeout);
+                    return hosting;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.IsConsequenceOf<AddressAlreadyInUseException>())
+                    {
+                        addressInUseRetries++;
+
+                        if (addressInUseRetries <= _vconfig.AddressInUseRetries)
+                        {
+                            _log.Warn("Dynamic URI '{0}' is in use; trying other one (retries={1})", uri, addressInUseRetries);
+                            continue;
+                        }
+
+                        throw Helpers.MakeNew<VcallException>(ex, 
+                            "host.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", hosting.Tag, uri, addressInUseRetries);
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        private TargetPeer new_target(TargetConfiguration config)
+        {
+            var timeout = Helpers.TimeSpanFromMillis(_vconfig.Timeouts.TargetOpening);
+            int addressInUseRetries = 0;
+
+            for (;;)
+            {
+                var target = new TargetPeer(config, this);
+                string uri = make_dynamic_uri(target.Tag);
+
+                try
+                {
+                    target.Start(uri, timeout);
+                    return target;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.IsConsequenceOf<AddressAlreadyInUseException>())
+                    {
+                        addressInUseRetries++;
+
+                        if (addressInUseRetries <= _vconfig.AddressInUseRetries)
+                        {
+                            _log.Warn("Dynamic URI '{0}' is in use; trying other one (retries={1})", uri, addressInUseRetries);
+                            continue;
+                        }
+
+                        throw Helpers.MakeNew<VcallException>(ex,
+                            "target.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", target.Tag, uri, addressInUseRetries);
+                    }
+
+                    throw;
+                }
+            }
+        }
+
         #endregion
 
         #region IVcallSubsystem
+
+        public VcallConfiguration Config
+        {
+            get { return _vconfig.Clone(); }
+        }
 
         IHostResolver IVcallSubsystem.Resolver
         {
@@ -103,53 +213,63 @@ namespace l4p.VcallModel.Core
 
             foreach (var node in nodes)
             {
-                node.Stop(_internalAccess);
+                close_comm_node(node);
             }
         }
 
         IVhosting IVcallSubsystem.NewHosting(HostingConfiguration config)
         {
-            var hosting = new HostingPeer(config, this);
-
+            var hosting = new_hostring(config);
             string callbackUri = hosting.ListeningUri;
+
             _resolver.PublishHostingPeer(callbackUri, hosting);
 
-            _repo.Add(hosting);
-            _counters.HostingsOpened++;
+            lock (_mutex)
+            {
+                _repo.Add(hosting);
+                _counters.HostingsOpened++;
+            }
 
             return hosting;
         }
 
         IVtarget IVcallSubsystem.NewTarget(TargetConfiguration config)
         {
-            var target = new TargetPeer(config, this);
+            var target = new_target(config);
 
             _resolver.SubscribeTargetPeer(target.OnHostingPeerDiscovery, target);
 
-            _repo.Add(target);
-            _counters.TargetsOpened++;
+            lock (_mutex)
+            {
+                _repo.Add(target);
+                _counters.TargetsOpened++;
+            }
 
             return target;
         }
 
         void IVcallSubsystem.CloseHosting(ICommNode node)
         {
-            _repo.Remove(node);
+            lock (_mutex)
+            {
+                _repo.Remove(node);
+                _counters.HostingsClosed++;
+            }
 
             _resolver.CancelPublishedHosting(node);
-            node.Stop(_internalAccess);
-
-            _counters.HostingsClosed++;
+            close_comm_node(node);
         }
 
         void IVcallSubsystem.CloseTarget(ICommNode node)
         {
-            _repo.Remove(node);
+            lock (_mutex)
+            {
+                _repo.Remove(node);
+                _counters.TargetsClosed++;
+            }
 
             _resolver.CancelSubscribedTarget(node);
-            node.Stop(_internalAccess);
-
-            _counters.TargetsClosed++;
+            close_comm_node(node);
         }
 
         DebugCounters IVcallSubsystem.DebugCounters

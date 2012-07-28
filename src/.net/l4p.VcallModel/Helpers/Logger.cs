@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 
 namespace l4p.VcallModel.Helpers
@@ -14,7 +15,9 @@ namespace l4p.VcallModel.Helpers
     public interface ILogger
     {
         void Error(string format, params object[] args);
+        void Error(Exception ex, string format, params object[] args);
         void Warn(string format, params object[] args);
+        void Warn(Exception ex, string format, params object[] args);
         void Info(string format, params object[] args);
         void Trace(string format, params object[] args);
     }
@@ -105,6 +108,22 @@ namespace l4p.VcallModel.Helpers
             send_message(msg);
         }
 
+        void ILogger.Error(Exception ex, string format, params object[] args)
+        {
+            if (_priority < LogPriority.Error)
+                return;
+
+            var sbMsg = new StringBuilder();
+
+            sbMsg
+                .StartWithNewLine()
+                .Append(build_prefix("E") + build_user_message(format, args))
+                .AppendLine()
+                .Append(ex.GetDetailedMessage());
+
+            send_message(sbMsg.ToString());
+        }
+
         void ILogger.Warn(string format, params object[] args)
         {
             if (_priority < LogPriority.Warn)
@@ -112,6 +131,22 @@ namespace l4p.VcallModel.Helpers
 
             string msg = build_prefix("W") + build_user_message(format, args);
             send_message(msg);
+        }
+
+        void ILogger.Warn(Exception ex, string format, params object[] args)
+        {
+            if (_priority < LogPriority.Warn)
+                return;
+
+            var sbMsg = new StringBuilder();
+
+            sbMsg
+                .StartWithNewLine()
+                .Append(build_prefix("W") + build_user_message(format, args))
+                .AppendLine()
+                .Append(ex.GetDetailedMessage());
+
+            send_message(sbMsg.ToString());
         }
 
         void ILogger.Info(string format, params object[] args)

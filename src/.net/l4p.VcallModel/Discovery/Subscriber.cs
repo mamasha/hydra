@@ -18,35 +18,5 @@ namespace l4p.VcallModel.Discovery
         public string ResolvingKey { get; set; }
         public HostPeerNotification Notify { get; set; }
         public Uri ResolvingScope { get; set; }
-
-        private readonly Dictionary<string, DateTime> _aliveCallbacks = new Dictionary<string, DateTime>();
-
-        public void GotAliveCallback(string callbackUri, DateTime now, List<Action> notifications)
-        {
-            if (_aliveCallbacks.ContainsKey(callbackUri) == false)
-            {
-                notifications.Add(() => Notify(callbackUri, true));
-            }
-
-            _aliveCallbacks[callbackUri] = now;
-        }
-
-        public void RemoveDeadCallbacks(DateTime now, TimeSpan aliveSpan, List<Action> notifications)
-        {
-            var aliveCallbacks = _aliveCallbacks.ToArray();
-
-            foreach (var pair in aliveCallbacks)
-            {
-                var lastAliveMsg = pair.Value;
-
-                if (now - lastAliveMsg > aliveSpan)
-                {
-                    string callbackUri = pair.Key;
-                    _aliveCallbacks.Remove(callbackUri);
-
-                    notifications.Add(() => Notify(callbackUri, false));
-                }
-            }
-        }
     }
 }

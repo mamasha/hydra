@@ -32,7 +32,7 @@ namespace l4p.VcallModel.Core
 
         #region protected api
 
-        protected abstract void Stop();
+        protected abstract void Stop(TimeSpan timeout);
 
         #endregion
 
@@ -54,10 +54,10 @@ namespace l4p.VcallModel.Core
             }
         }
 
-        void ICommNode.Stop(Internal access)
+        void ICommNode.Stop(Internal access, TimeSpan timeout)
         {
             InternalAccess.Check(access);
-            Stop();
+            Stop(timeout);
         }
 
         #endregion

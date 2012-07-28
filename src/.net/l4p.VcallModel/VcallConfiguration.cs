@@ -6,31 +6,51 @@ namespace l4p.VcallModel
     {
         public string ResolvingKey { get; set; }
         public string DiscoveryScopePattern { get; set; }
-        public int? Port { get; set; }
 
+        public int? Port { get; set; }
+        public string HostingUriPattern { get; set; }
+
+        public int AddressInUseRetries { get; set; }
         public Timeouts Timeouts { get; set; }
 
         public VcallConfiguration()
         {
             ResolvingKey = Guid.NewGuid().ToString("B");
             DiscoveryScopePattern = "udp://l4p.vcallmodel/discovery/{0}/";
+            HostingUriPattern = "net.tcp://{0}:{1}/host/{2}/";
+            AddressInUseRetries = 3;
             Timeouts = new Timeouts();
+        }
+
+        public VcallConfiguration Clone()
+        {
+            return
+                (VcallConfiguration) this.MemberwiseClone();
         }
     }
 
     public class Timeouts
     {
-        public int ServiceAliveTimeSpan { get; set; }
-        public int DiscoveryUpdatePeriod { get; set; }
+        public int ByeMessageGap { get; set; }
+        public int HelloMessageGap { get; set; }
         public int DiscoveryOpening { get; set; }
         public int DiscoveryClosing { get; set; }
+        public int HostingOpening { get; set; }
+        public int HostingClosing { get; set; }
+        public int TargetOpening { get; set; }
 
         public Timeouts()
         {
-            ServiceAliveTimeSpan = 10000;
-            DiscoveryUpdatePeriod = 3000;
-            DiscoveryOpening = 5000;
-            DiscoveryClosing = 1000;
+            const int OpenWcfHostTimeout = 5000;
+            const int CloseWcfHostTimeout = 1000;
+
+            ByeMessageGap = 10000;
+            HelloMessageGap = 3000;
+            DiscoveryOpening = OpenWcfHostTimeout;
+            DiscoveryClosing = CloseWcfHostTimeout;
+            HostingOpening = OpenWcfHostTimeout;
+            HostingClosing = CloseWcfHostTimeout;
+            TargetOpening = OpenWcfHostTimeout;
         }
     }
 

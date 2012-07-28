@@ -25,9 +25,8 @@ namespace l4p.VcallModel.Core
         #region members
 
         private static readonly ILogger _log = Logger.New<Repository>();
-        private static readonly IHelpers Helpers = Utils.New(_log);
+        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
 
-        private readonly Object _mutex;
         private List<ICommNode> _nodes;
 
         #endregion
@@ -42,7 +41,6 @@ namespace l4p.VcallModel.Core
 
         private Repository()
         {
-            _mutex = new Object();
             _nodes = new List<ICommNode>();
         }
 
@@ -73,26 +71,17 @@ namespace l4p.VcallModel.Core
 
         void IRepository.Add(IVhosting node)
         {
-            lock (_mutex)
-            {
-                add_node(node);
-            }
+            add_node(node);
         }
 
         void IRepository.Add(IVtarget node)
         {
-            lock (_mutex)
-            {
-                add_node(node);
-            }
+            add_node(node);
         }
 
         void IRepository.Remove(ICommNode node)
         {
-            lock (_mutex)
-            {
-                remove_node(node);
-            }
+            remove_node(node);
         }
 
         ICommNode[] IRepository.GetNodes()

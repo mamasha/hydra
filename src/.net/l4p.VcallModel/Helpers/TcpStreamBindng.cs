@@ -9,7 +9,7 @@ using System.ServiceModel;
 
 namespace l4p.VcallModel.Helpers
 {
-    public class TcpStreamBindng : NetTcpBinding
+    class TcpStreamBindng : NetTcpBinding
     {
         private readonly int MAX_MSG_SIZE = 2 * 1024 * 1024;
 

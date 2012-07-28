@@ -29,8 +29,8 @@ namespace l4p.VcallModel.Core
         [DataMember] public int TargetsOpened { get; set; }
         [DataMember] public int TargetsClosed { get; set; }
 
-        [DataMember] public int Target_AliveHosts { get; set; }
-        [DataMember] public int Hosting_AliveTargets { get; set; }
+        [DataMember] public int Target_ConnectedHosts { get; set; }
+        [DataMember] public int Hosting_ConnectedTargets { get; set; }
     }
 
     public static class DebugCountersFormatter
