@@ -7,7 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     static class TimeHelpers
     {

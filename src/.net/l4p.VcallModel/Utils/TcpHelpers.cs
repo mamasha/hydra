@@ -7,9 +7,8 @@ copied or duplicated in any form, in whole or in part.
 
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     static class TcpHelpers
     {

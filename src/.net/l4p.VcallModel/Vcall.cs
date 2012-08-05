@@ -7,7 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel
 {
@@ -30,7 +30,7 @@ namespace l4p.VcallModel
         #region members
 
         private static readonly ILogger _log = Logger.New<Vcall>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private static readonly object _startMutex = new Object();
 
@@ -59,7 +59,7 @@ namespace l4p.VcallModel
                 return;
 
             throw
-                Helpers.MakeNew<VcallException>(null, "Vcall has not been initialized. Call StartServices() first.");
+                Helpers.MakeNew<VcallException>(null, _log, "Vcall has not been initialized. Call StartServices() first.");
         }
 
         private static void start_services(VcallConfiguration config)
@@ -67,13 +67,13 @@ namespace l4p.VcallModel
             if (_core != null)
                 return;
 
-            var core = Helpers.TryCatch(
+            var core = Helpers.TryCatch(_log,
                 () => VcallSubsystem.New(config),
-                ex => Helpers.ThrowNew<VcallException>(ex, "Failed to create Vcall subsystem"));
+                ex => Helpers.ThrowNew<VcallException>(ex, _log, "Failed to create Vcall subsystem"));
 
-            Helpers.TryCatch(
+            Helpers.TryCatch(_log,
                 () => core.Start(),
-                ex => Helpers.ThrowNew<VcallException>(ex, "Failed to start Vcall subsystem"));
+                ex => Helpers.ThrowNew<VcallException>(ex, _log, "Failed to start Vcall subsystem"));
 
             _config = config;
             _core = core;
@@ -105,9 +105,9 @@ namespace l4p.VcallModel
                 if (defaultTarget != null)
                     defaultTarget.Close();
 
-                Helpers.TryCatch(
+                Helpers.TryCatch(_log,
                     () => core.Stop(),
-                    ex => Helpers.ThrowNew<VcallException>(ex, "Failed to stop default Vcall endpoint services"));
+                    ex => Helpers.ThrowNew<VcallException>(ex, _log, "Failed to stop default Vcall endpoint services"));
             }
             catch (Exception ex)
             {
@@ -127,7 +127,7 @@ namespace l4p.VcallModel
             catch (Exception ex)
             {
                 throw
-                    Helpers.MakeNew<VcallException>(ex, "Failed to create hosting");
+                    Helpers.MakeNew<VcallException>(ex, _log, "Failed to create hosting");
             }
         }
 
@@ -141,7 +141,7 @@ namespace l4p.VcallModel
             catch (Exception ex)
             {
                 throw
-                    Helpers.MakeNew<VcallException>(ex, "Failed to create target");
+                    Helpers.MakeNew<VcallException>(ex, _log, "Failed to create target");
             }
         }
 
@@ -275,7 +275,19 @@ namespace l4p.VcallModel
         public static IVhosting NewHosting(HostingVisibilityScope visibilityScope)
         {
             assert_services_are_started();
-            var config = new HostingConfiguration {VisibilityScope = visibilityScope};
+            var config = new HostingConfiguration { VisibilityScope = visibilityScope };
+            return
+                new_hosting(config);
+        }
+
+        /// <summary>
+        /// Create new hosting model with default parameters ... </summary>
+        /// <param name="namespace">A namespace for functions hosted by a returned hosting</param>
+        /// <returns>New active hosting that is ready to host functions</returns>
+        public static IVhosting NewHosting(string @namespace)
+        {
+            assert_services_are_started();
+            var config = new HostingConfiguration { NameSpace = @namespace };
             return
                 new_hosting(config);
         }
@@ -293,7 +305,7 @@ namespace l4p.VcallModel
 
         /// <summary>
         /// Create new target model with default parameters ...</summary>
-        /// <returns></returns>
+        /// <returns>A new proxy on which v-calls are issued</returns>
         public static IVtarget GetTargets()
         {
             assert_services_are_started();
@@ -302,9 +314,20 @@ namespace l4p.VcallModel
         }
 
         /// <summary>
+        /// Create new target model with default parameters ...</summary>
+        /// <param name="namespace">Restrict v-calls resolving to a specific namespace</param>
+        /// <returns>A new proxy on which v-calls are issued</returns>
+        public static IVtarget GetTargets(string @namespace)
+        {
+            assert_services_are_started();
+            return
+                _core.NewTarget(new TargetConfiguration { NameSpace = @namespace });
+        }
+
+        /// <summary>
         /// Create new custom target model</summary>
         /// <param name="config">Costomization parameters</param>
-        /// <returns>New target model</returns>
+        /// <returns>A new proxy on which v-calls are issued</returns>
         public static IVtarget GetTargets(TargetConfiguration config)
         {
                 assert_services_are_started();

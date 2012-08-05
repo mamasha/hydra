@@ -6,9 +6,12 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     static class ExceptionHelpers
     {
@@ -100,7 +103,7 @@ namespace l4p.VcallModel.Helpers
                 String.Format("{0}: {1}", ex.GetType().FullName, ex.Message);
         }
 
-        public static void TryCatch(this IHelpers Helpers, Action action, Action<Exception> handler)
+        public static void TryCatch(this IHelpers Helpers, ILogger log, Action action, Action<Exception> handler)
 		{
 			try
 			{
@@ -108,13 +111,15 @@ namespace l4p.VcallModel.Helpers
 			}
 			catch (Exception ex)
 			{
-				Helpers._log.Error("{0}: {1}", ex.GetType().Name, ex.Message);
+                if (log != null)
+				    log.Error("{0}: {1}", ex.GetType().Name, ex.Message);
+
 				handler(ex);
 				throw;
 			}
 		}
 
-		public static R TryCatch<R>(this IHelpers Helpers, Func<R> func, Action<Exception> handler)
+		public static R TryCatch<R>(this IHelpers Helpers, ILogger log, Func<R> func, Action<Exception> handler)
 		{
 			try
 			{
@@ -122,31 +127,35 @@ namespace l4p.VcallModel.Helpers
 			}
 			catch (Exception ex)
 			{
-                Helpers._log.Error("{0}: {1}", ex.GetType().Name, ex.Message);
+                if (log != null)
+                    log.Error("{0}: {1}", ex.GetType().Name, ex.Message);
+
 				handler(ex);
 				throw;
 			}
 		}
 
-		public static void ThrowNew<E>(this IHelpers Helpers, Exception inner, string format, params object[] args)
+		public static void ThrowNew<E>(this IHelpers Helpers, Exception inner, ILogger log, string format, params object[] args)
 			where E : Exception, new()
 		{
 			string ename = typeof(E).Name;
 			string errMsg = build_err_msg(format, args);
 
-            Helpers._log.Warn("{0}: {1}", ename, errMsg);
+            if (log != null)
+                log.Warn("{0}: {1}", ename, errMsg);
 
 		    throw
 				make_exception(typeof(E), errMsg, inner);
 		}
 
-        public static Exception MakeNew<E>(this IHelpers Helpers, Exception inner, string format, params object[] args)
+        public static Exception MakeNew<E>(this IHelpers Helpers, Exception inner, ILogger log, string format, params object[] args)
             where E : Exception, new()
         {
             string ename = typeof(E).Name;
             string errMsg = build_err_msg(format, args);
 
-            Helpers._log.Warn("{0}: {1}", ename, errMsg);
+            if (log != null)
+                log.Warn("{0}: {1}", ename, errMsg);
 
             return
                 make_exception(typeof(E), errMsg, inner);
@@ -213,6 +222,13 @@ namespace l4p.VcallModel.Helpers
             return false;
         }
 
+        public static bool IsNotConsequenceOf<TException>(this Exception ex)
+            where TException : Exception
+        {
+            return
+                !ex.IsConsequenceOf<TException>();
+        }
+
         public static bool IsConsequenceOf(this Exception ex, Type exceptionType)
         {
             var exOfInterest = exceptionType;
@@ -239,6 +255,22 @@ namespace l4p.VcallModel.Helpers
             }
 
             return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static NotImplementedException NewNotImplementedException(this IHelpers Helpers)
+        {
+            var method = new StackFrame(1, false).GetMethod();
+            string cname = method.DeclaringType.Name;
+            string mname = method.Name;
+
+            if (mname.Contains("."))
+                mname = Path.GetExtension(mname);
+            else
+                mname = "." + mname;
+
+            return
+                new NotImplementedException(String.Format("{0}{1}() is not implemented yet", cname, mname));
         }
 
         #endregion

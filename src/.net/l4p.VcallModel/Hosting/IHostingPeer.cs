@@ -6,8 +6,10 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Runtime.Serialization;
 using System.ServiceModel;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Target;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
@@ -18,14 +20,23 @@ namespace l4p.VcallModel.Hosting
         public HostingPeerException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [DataContract]
+    class HostingInfo
+    {
+        [DataMember] public string Tag { get; set; }
+        [DataMember] public string CallbackUri { get; set; }
+        [DataMember] public string NameSpace { get; set; }
+        [DataMember] public string HostName { get; set; }
+    }
+
     [ServiceContract]
     interface IHostingPeer
     {
-        [OperationContract]
-        void RegisterTargetPeer(string targetTag, string callbackUri);
+        [OperationContract(IsOneWay = true)]
+        void SubscribeTargets(TargetsInfo info);
 
         [OperationContract(IsOneWay = true)]
-        void UnregisterTargetPeer(string targetTag);
+        void CancelTargets(string targetsTag);
     }
 
     class HostingPeerProxy : ClientBase<IHostingPeer>, IHostingPeer
@@ -39,8 +50,8 @@ namespace l4p.VcallModel.Hosting
             base(new TcpStreamBindng(), new EndpointAddress(uri))
         { }
 
-        void IHostingPeer.RegisterTargetPeer(string targetTag, string callbackUri) { Channel.RegisterTargetPeer(targetTag, callbackUri); }
-        void IHostingPeer.UnregisterTargetPeer(string targetTag) { Channel.UnregisterTargetPeer(targetTag); }
+        void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
+        void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
     }
 
 }

@@ -8,7 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Reflection;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     public class InternalAccessException : Exception
     {

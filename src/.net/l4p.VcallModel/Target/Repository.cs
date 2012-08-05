@@ -1,21 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using l4p.VcallModel.Hosting;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Target
 {
     interface IRepository
     {
-        void AddHost(string callbackUri, IHostingPeer host);
-        void RemoveHost(string callbackUri);
-        bool HasHost(string callbackUri);
+        void AddHosting(HostingInfo info);
+        void RemoveHosting(string tag);
+//        void HostIdDead(string callbackUri);
 
-        int HostsCount { get; }
+        int HostingsCount { get; }
     }
 
     class Repository : IRepository
     {
         #region members
+
+        private static readonly ILogger _log = Logger.New<TargetsPeer>();
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private IDictionary<string, IHostingPeer> _hosts;
 
@@ -38,24 +42,25 @@ namespace l4p.VcallModel.Target
 
         #region IRepository
 
-        void IRepository.AddHost(string callbackUri, IHostingPeer host)
+        void IRepository.AddHosting(HostingInfo info)
         {
-            throw new NotImplementedException();
+            throw 
+                Helpers.NewNotImplementedException();
         }
 
-        void IRepository.RemoveHost(string callbackUri)
+        void IRepository.RemoveHosting(string tag)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
-        bool IRepository.HasHost(string callbackUri)
+        int IRepository.HostingsCount
         {
-            throw new NotImplementedException();
-        }
-
-        int IRepository.HostsCount
-        {
-            get { throw new NotImplementedException(); }
+            get
+            {
+                throw
+                    Helpers.NewNotImplementedException();
+            }
         }
 
         #endregion

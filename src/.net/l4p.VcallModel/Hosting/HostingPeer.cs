@@ -7,8 +7,8 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Helpers;
 using l4p.VcallModel.Target;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
@@ -19,7 +19,7 @@ namespace l4p.VcallModel.Hosting
         #region members
 
         private static readonly ILogger _log = Logger.New<HostingPeer>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly HostingConfiguration _config;
         private readonly IVcallSubsystem _core;
@@ -27,6 +27,7 @@ namespace l4p.VcallModel.Hosting
         private readonly Object _mutex;
         private readonly IRepository _repo;
         private readonly IWcfHostring _wcf;
+        private readonly IHostingThread _thread;
 
         private string _listeningUri;
 
@@ -39,8 +40,9 @@ namespace l4p.VcallModel.Hosting
             _config = config;
             _core = core;
             _mutex = new Object();
-            _repo = Repository.New();
+            _repo = Repository.New(this);
             _wcf = new WcfHosting(this);
+            _thread = HostringThread.New(_tag);
         }
 
         #endregion
@@ -48,27 +50,56 @@ namespace l4p.VcallModel.Hosting
         private void trace(string format, params object[] args)
         {
             string msg = Helpers.SafeFormat(format, args);
-            _log.Trace("host.{0}: {1}", _tag, msg);
+            _log.Trace("hosting.{0}: {1}", _tag, msg);
         }
 
-        private void handle_new_target(string targetTag, string callbackUri)
+        private void update_targets_peer(TargetsInfo info)
+            // hosting thread
         {
-            var targetPeer = Helpers.TryCatch(
-                () => TargetPeerProxy.New(callbackUri),
-                ex => Helpers.ThrowNew<HostingPeerException>(ex, "host.{0}: Failed to connect to target.{1} peer at '{2}'", _tag, targetTag, callbackUri));
+        }
 
-            // update target with all subjects
+        private void connect_to_targets(TargetsInfo info)
+            // hosting thread
+        {
+            var myInfo = new HostingInfo
+            {
+                Tag = _tag,
+                CallbackUri = _listeningUri,
+                NameSpace = _config.NameSpace,
+                HostName = "TBD"
+            };
+
+            info.Proxy.RegisterHosting(myInfo);
+            _counters.Hosting_ConnectedTargets++;
 
             lock (_mutex)
             {
-                _repo.AddTarget(targetTag, targetPeer);
-                _counters.Hosting_ConnectedTargets++;
+                _repo.AddTargets(info);
             }
+
+            update_targets_peer(info);
         }
 
-        private void handle_dead_target(string targetTag)
+        private void subscribe_targets(TargetsInfo info)
+            // hosting thread
         {
-            throw new NotImplementedException();
+            trace("Got new targets.{0} at '{1}'", info.Tag, info.ListeningUri);
+
+            info.Proxy = TargetsPeerProxy.New(info.ListeningUri);
+
+            lock (_mutex)
+            {
+                _repo.AddTargets(info);
+                _counters.Hosting_SubscribedTargets++;
+            }
+
+            connect_to_targets(info);
+        }
+
+        private void cancel_targets(string targetsTag)
+            // hosting thread
+        {
+            trace("targets.{0} is canceled", targetsTag);
         }
 
         #region public api
@@ -77,10 +108,11 @@ namespace l4p.VcallModel.Hosting
         {
             trace("starting at uri '{0}'", uri);
 
-            _listeningUri = Helpers.TryCatch(
+            _listeningUri = Helpers.TryCatch(_log,
                 () => _wcf.Start(uri, timeout),
-                ex => Helpers.ThrowNew<HostingPeerException>(ex, "Failed to start host.{0} at '{1}'", _tag, uri));
+                ex => Helpers.ThrowNew<HostingPeerException>(ex, _log, "Failed to start hosting.{0} at '{1}'", _tag, uri));
 
+            _thread.Start();
 
             trace("host is started");
         }
@@ -94,24 +126,18 @@ namespace l4p.VcallModel.Hosting
 
         #region IHostingPeer
 
-        void IHostingPeer.RegisterTargetPeer(string targetTag, string callbackUri)
+        void IHostingPeer.SubscribeTargets(TargetsInfo info)
+            // one way message; arbitrary WCF thread
         {
-            trace("Got new target.{0} at '{1}'", targetTag, callbackUri);
-
-            try
-            {
-                handle_new_target(targetTag, callbackUri);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn(ex, "Failed to connect to target.{0} peer at '{1}'", targetTag, callbackUri);
-            }
+            _thread.PostAction(
+                () => subscribe_targets(info), "Sibscribing targets.{0} peer at '{1}'", info.Tag, info.ListeningUri);
         }
 
-        void IHostingPeer.UnregisterTargetPeer(string targetTag)
+        void IHostingPeer.CancelTargets(string targetsTag)
+            // one way message
         {
-            trace("target.{0} is dead", targetTag);
-            handle_dead_target(targetTag);
+            _thread.PostAction(
+                () => cancel_targets(targetsTag), "Canceling targets.{0}", targetsTag);
         }
 
         #endregion
@@ -119,11 +145,13 @@ namespace l4p.VcallModel.Hosting
         #region protected api
 
         protected override void Stop(TimeSpan timeout)
+            // one way message; arbitrary WCF thread
         {
-            // notify all targets
 
             _wcf.Stop(timeout);
-            _log.Trace("host.{0}: hosting is stopped", _tag);
+            _thread.Stop();
+
+            trace("hosting is stopped");
         }
 
         #endregion
@@ -132,37 +160,44 @@ namespace l4p.VcallModel.Hosting
 
         void IVhosting.AddTarget(Action target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.AddTarget<R>(Func<R> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.AddTarget<T1, T2>(string targetName, Action<T1, T2> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         R IVhosting.AddTarget<T1, T2, R>(string targetName, Func<T1, T2, R> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.AddTarget<T1, T2>(Action<T1, T2> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.AddTarget<T1, R>(Func<T1, R> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.AddTarget<T1, T2, R>(Func<T1, T2, R> target)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IVhosting.Close()

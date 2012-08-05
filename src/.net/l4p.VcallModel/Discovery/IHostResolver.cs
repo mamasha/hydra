@@ -11,14 +11,7 @@ using l4p.VcallModel.Core;
 
 namespace l4p.VcallModel.Discovery
 {
-    delegate void HostPeerNotification(string callbackUri, bool alive);
-
-    class HostResolverException : Exception
-    {
-        public HostResolverException() { }
-        public HostResolverException(string message) : base(message) { }
-        public HostResolverException(string message, Exception inner) : base(message, inner) { }
-    }
+    delegate void PublishNotification(string callbackUri, string role, bool alive);
 
     class HostResolverConfiguration
     {
@@ -30,28 +23,21 @@ namespace l4p.VcallModel.Discovery
         public int DiscoveryClosing { get; set; }
     }
 
+    class HostResolverException : Exception
+    {
+        public HostResolverException() { }
+        public HostResolverException(string message) : base(message) { }
+        public HostResolverException(string message, Exception inner) : base(message, inner) { }
+    }
+
     interface IHostResolver
     {
         void Start();
         void Stop();
 
-        // user arbitrary threads
+        IRevertable Publish(string callbackUri, string role, string tag);
+        IRevertable Subscribe(PublishNotification onPublish, string tag);
 
-        void PublishHostingPeer(string callbackUri, ICommNode node);
-        void SubscribeTargetPeer(HostPeerNotification notify, ICommNode node);
-
-        void CancelPublishedHosting(ICommNode node);
-        void CancelSubscribedTarget(ICommNode node);
-
-        DebugCounters DebugCounters { get; }
-
-        // WCF arbitrary threads
-
-        void HandleHelloMessage(EndpointDiscoveryMetadata edm, DateTime lastSeen);
-
-        // resolver thread
-
-        void SendHelloMessages();
-        void GenerateByeNotifications(DateTime now);
+        DebugCounters Counters { get; }
     }
 }

@@ -7,7 +7,8 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Target;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
@@ -29,7 +30,7 @@ namespace l4p.VcallModel.Hosting
         #region members
 
         private static readonly ILogger _log = Logger.New<WcfHosting>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private ServiceHost _host;
 
@@ -39,9 +40,9 @@ namespace l4p.VcallModel.Hosting
 
         public WcfHosting(IHostingPeer peer)
         {
-            Helpers.TryCatch(
+            Helpers.TryCatch(_log,
                 () => _host = new ContextualHost(peer),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
+                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
         }
 
         #endregion
@@ -50,9 +51,9 @@ namespace l4p.VcallModel.Hosting
 
         string IWcfHostring.Start(string uri, TimeSpan timeout)
         {
-            Helpers.TryCatch(
+            Helpers.TryCatch(_log,
                 () => _host.AddServiceEndpoint(typeof(IHostingPeer), new TcpStreamBindng(), uri),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, "Failed to add end point with uri '{0}'", uri));
+                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
 
             Helpers.TimedAction(
                 () => _host.Open(timeout), "Failed to open hosting service in {0} millis", timeout.TotalMilliseconds);
@@ -73,24 +74,27 @@ namespace l4p.VcallModel.Hosting
 
     class ContextualHost : ServiceHost
     {
-        private IHostingPeer _peer;
+        private IHostingPeer _channel;
 
-        public ContextualHost(IHostingPeer peer)
+        public ContextualHost(IHostingPeer channel)
             : base(typeof(ContextualPeer))
         {
-            _peer = peer;
+            _channel = channel;
         }
 
         class ContextualPeer : IHostingPeer
         {
-            private IHostingPeer peer()
+            private static IHostingPeer Channel
             {
-                var context = (ContextualHost) OperationContext.Current.Host;
-                return context._peer;
+                get
+                {
+                    var context = (ContextualHost)OperationContext.Current.Host;
+                    return context._channel;
+                }
             }
 
-            void IHostingPeer.RegisterTargetPeer(string targetTag, string callbackUri) { peer().RegisterTargetPeer(targetTag, callbackUri); }
-            void IHostingPeer.UnregisterTargetPeer(string targetTag) { peer().UnregisterTargetPeer(targetTag); }
+            void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
+            void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
         }
     }
 

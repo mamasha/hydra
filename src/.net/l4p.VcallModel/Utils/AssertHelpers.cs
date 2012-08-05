@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq.Expressions;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     static class AssertHelpers
 	{
-        public static void Assert<TException>(this IHelpers Helpers, bool expr)
+        public static void Assert<TException>(this IHelpers Helpers, bool expr, ILogger log)
             where TException : Exception, new()
         {
             if (expr)
@@ -18,15 +17,15 @@ namespace l4p.VcallModel.Helpers
                 Debug.Assert(false, assertMsg);
 
             throw
-                Helpers.MakeNew<TException>(null, assertMsg);
+                Helpers.MakeNew<TException>(null, log, assertMsg);
         }
 
-        public static void Assert(this IHelpers Helpers, bool expr)
+        public static void Assert(this IHelpers Helpers, bool expr, ILogger log)
         {
-            Helpers.Assert<InternalException>(expr);
+            Helpers.Assert<InternalException>(expr, log);
         }
 
-        public static void Assert<TException>(this IHelpers Helpers, bool expr, string format, params object[] args)
+        public static void Assert<TException>(this IHelpers Helpers, bool expr, ILogger log, string format, params object[] args)
             where TException : Exception, new()
         {
             if (expr)
@@ -44,12 +43,12 @@ namespace l4p.VcallModel.Helpers
                 Debug.Assert(false, assertMsg);
 
             throw 
-                Helpers.MakeNew<TException>(null, assertMsg);
+                Helpers.MakeNew<TException>(null, log, assertMsg);
         }
 
-        public static void Assert(this IHelpers Helpers, bool expr, string format, params object[] args)
+        public static void Assert(this IHelpers Helpers, bool expr, ILogger log, string format, params object[] args)
         {
-            Helpers.Assert<InternalException>(expr, format, args);
+            Helpers.Assert<InternalException>(expr, log, format, args);
         }
     }
 }

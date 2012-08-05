@@ -17,6 +17,10 @@ namespace l4p.VcallModel
     public class TargetConfiguration
     {
         /// <summary>
+        /// A namespace of v-calls targets</summary>
+        public string NameSpace { get; set; }
+
+        /// <summary>
         /// TCP port to connect to  </summary>
         public int? Port { get; set; }
 

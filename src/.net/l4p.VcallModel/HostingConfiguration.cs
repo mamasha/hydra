@@ -38,6 +38,10 @@ namespace l4p.VcallModel
     public class HostingConfiguration
     {
         /// <summary>
+        /// A namespace of hosted functions</summary>
+        public string NameSpace { get; set; }
+
+        /// <summary>
         /// Defines which targets will see functions hosted by this hosting </summary>
         /// <remarks>Currently supported scopes are LocalHost and ResolvingRing</remarks>
         public HostingVisibilityScope? VisibilityScope;

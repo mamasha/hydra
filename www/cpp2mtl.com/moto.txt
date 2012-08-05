@@ -1,0 +1,24 @@
+====== Hydra's moto ======
+
+The major, huge, immensible difference of Vcall approach is its orientation on a single function.
+That puts the developemnt focus on a fast prototyping. Without any other programing concerns.
+
+Let's look at any algorithm developer. He is a smart, bright mathematical person.
+His primary concern is developing a super-sophisticated algorithm
+
+<code>
+function [a] = Algorithm(x, y, s, xx, yyy, config)
+...
+</code>
+
+This is the reality of a math development.
+Vcall respects this reality. It especially supports that single particular function.
+
+<code csharp>
+void main(...)
+{
+    l4p.Vcall.Call("Algorithm", 1, 2.3, "X-axis", new int[10,10], new double[40,40,40],
+        new {Orientation = 1, Resolution = .9, Kernel = new int[3,3]});
+}
+</code>
+

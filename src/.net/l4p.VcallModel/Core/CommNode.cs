@@ -6,7 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {

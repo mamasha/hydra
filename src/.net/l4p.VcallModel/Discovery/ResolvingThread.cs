@@ -9,7 +9,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Core;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Discovery
 {
@@ -18,33 +19,37 @@ namespace l4p.VcallModel.Discovery
         void Start();
         void Stop();
         void PostAction(Action action);
+
+        DebugCounters Counters { get; }
     }
 
     class ResolvingThread : IResolvingThread
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<ResolvingThread>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly ILogger _log = Logger.New<HostResolver>();
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly BlockingCollection<Action> _todos;
         private readonly ManualResetEvent _isStoppedEvent;
         private readonly Thread _thr;
 
         private readonly int _helloMsgGap;
-        private readonly IHostResolver _resolver;
+        private readonly IEngine _engine;
 
         private readonly Stopwatch _groovyTimer;
         private bool _stopFlagIsOn;
+
+        private readonly DebugCounters _counters;
 
         #endregion
 
         #region construction
 
-        public ResolvingThread(IHostResolver resolver, int helloMsgGap)
+        public ResolvingThread(Self self, IEngine engine)
         {
-            _helloMsgGap = helloMsgGap;
-            _resolver = resolver;
+            _helloMsgGap = self.config.HelloMessageGap;
+            _engine = engine;
 
             _todos = new BlockingCollection<Action>();
             _isStoppedEvent = new ManualResetEvent(false);
@@ -52,29 +57,13 @@ namespace l4p.VcallModel.Discovery
 
             _stopFlagIsOn = false;
             _groovyTimer = new Stopwatch();
+
+            _counters = new DebugCounters();
         }
 
         #endregion
 
         #region private
-
-        private void discovery_update_main()
-        {
-            _log.Info("Discovery update loop is started");
-
-            try
-            {
-                discovery_update_loop();
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex.GetDetailedMessage());
-            }
-
-            _isStoppedEvent.Set();
-
-            _log.Info("Discovery update loop is done");
-        }
 
         private int do_groovy_tasks()
         {
@@ -85,8 +74,8 @@ namespace l4p.VcallModel.Discovery
 
             try
             {
-                _resolver.SendHelloMessages();
-                _resolver.GenerateByeNotifications(DateTime.Now);
+                _engine.SendHelloMessages();
+                _engine.GenerateByeNotifications(DateTime.Now);
             }
             catch (Exception ex)
             {
@@ -136,6 +125,24 @@ namespace l4p.VcallModel.Discovery
             }
         }
 
+        private void discovery_update_main()
+        {
+            _log.Info("Discovery update loop is started");
+
+            try
+            {
+                discovery_update_loop();
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex.GetDetailedMessage());
+            }
+
+            _isStoppedEvent.Set();
+
+            _log.Info("Discovery update loop is done");
+        }
+
         #endregion
 
         #region IResolvingThread
@@ -158,6 +165,11 @@ namespace l4p.VcallModel.Discovery
         void IResolvingThread.PostAction(Action action)
         {
             _todos.Add(action);
+        }
+
+        DebugCounters IResolvingThread.Counters
+        {
+            get { return _counters; }
         }
 
         #endregion

@@ -8,9 +8,9 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.ServiceModel;
 using l4p.VcallModel.Discovery;
-using l4p.VcallModel.Helpers;
 using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Target;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
@@ -36,7 +36,7 @@ namespace l4p.VcallModel.Core
         #region members
 
         private static readonly ILogger _log = Logger.New<VcallSubsystem>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
         private static readonly Internal _internalAccess = new Internal();
 
         private readonly Object _mutex;
@@ -99,7 +99,7 @@ namespace l4p.VcallModel.Core
             var counters = new DebugCounters();
 
             counters.Accumulate(_counters);
-            counters.Accumulate(_resolver.DebugCounters);
+            counters.Accumulate(_resolver.Counters);
 
             foreach (var node in _repo.GetNodes())
             {
@@ -136,8 +136,8 @@ namespace l4p.VcallModel.Core
                             continue;
                         }
 
-                        throw Helpers.MakeNew<VcallException>(ex, 
-                            "host.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", hosting.Tag, uri, addressInUseRetries);
+                        throw Helpers.MakeNew<VcallException>(ex, _log,
+                            "hosting.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", hosting.Tag, uri, addressInUseRetries);
                     }
 
                     throw;
@@ -145,14 +145,14 @@ namespace l4p.VcallModel.Core
             }
         }
 
-        private TargetPeer new_target(TargetConfiguration config)
+        private TargetsPeer new_target(TargetConfiguration config)
         {
             var timeout = Helpers.TimeSpanFromMillis(_vconfig.Timeouts.TargetOpening);
             int addressInUseRetries = 0;
 
             for (;;)
             {
-                var target = new TargetPeer(config, this);
+                var target = new TargetsPeer(config, this);
                 string uri = make_dynamic_uri(target.Tag);
 
                 try
@@ -172,8 +172,8 @@ namespace l4p.VcallModel.Core
                             continue;
                         }
 
-                        throw Helpers.MakeNew<VcallException>(ex,
-                            "target.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", target.Tag, uri, addressInUseRetries);
+                        throw Helpers.MakeNew<VcallException>(ex, _log,
+                            "targets.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", target.Tag, uri, addressInUseRetries);
                     }
 
                     throw;
@@ -222,7 +222,7 @@ namespace l4p.VcallModel.Core
             var hosting = new_hostring(config);
             string callbackUri = hosting.ListeningUri;
 
-            _resolver.PublishHostingPeer(callbackUri, hosting);
+            _resolver.Publish(callbackUri, "hosting", hosting.Tag);
 
             lock (_mutex)
             {
@@ -237,7 +237,7 @@ namespace l4p.VcallModel.Core
         {
             var target = new_target(config);
 
-            _resolver.SubscribeTargetPeer(target.OnHostingPeerDiscovery, target);
+            _resolver.Subscribe(target.OnHostingDiscovery, target.Tag);
 
             lock (_mutex)
             {
@@ -250,25 +250,29 @@ namespace l4p.VcallModel.Core
 
         void IVcallSubsystem.CloseHosting(ICommNode node)
         {
+            throw new NotImplementedException();
+
             lock (_mutex)
             {
                 _repo.Remove(node);
                 _counters.HostingsClosed++;
             }
 
-            _resolver.CancelPublishedHosting(node);
+//            _resolver.CancelPublishedHosting(node);
             close_comm_node(node);
         }
 
         void IVcallSubsystem.CloseTarget(ICommNode node)
         {
+            throw new NotImplementedException();
+
             lock (_mutex)
             {
                 _repo.Remove(node);
                 _counters.TargetsClosed++;
             }
 
-            _resolver.CancelSubscribedTarget(node);
+//            _resolver.CancelSubscribedTarget(node);
             close_comm_node(node);
         }
 

@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     public interface ILogger
     {

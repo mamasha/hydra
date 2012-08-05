@@ -7,7 +7,8 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Hosting;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Target
 {
@@ -29,7 +30,7 @@ namespace l4p.VcallModel.Target
         #region members
 
         private static readonly ILogger _log = Logger.New<WcfTarget>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private ServiceHost _host;
 
@@ -37,11 +38,11 @@ namespace l4p.VcallModel.Target
         
         #region construction
 
-        public WcfTarget(ITargetPeer peer)
+        public WcfTarget(ITargetsPeer peer)
         {
-            Helpers.TryCatch(
+            Helpers.TryCatch(_log,
                 () => _host = new ContextualHost(peer),
-                ex => Helpers.ThrowNew<WcfTargetException>(ex, "Failed to create target for '{0}'", typeof(ITargetPeer).Name));
+                ex => Helpers.ThrowNew<WcfTargetException>(ex, _log, "Failed to create target for '{0}'", typeof(ITargetsPeer).Name));
         }
 
         #endregion
@@ -50,9 +51,9 @@ namespace l4p.VcallModel.Target
 
         string IWcfTarget.Start(string uri, TimeSpan timeout)
         {
-            Helpers.TryCatch(
-                () => _host.AddServiceEndpoint(typeof(ITargetPeer), new TcpStreamBindng(), uri),
-                ex => Helpers.ThrowNew<WcfTargetException>(ex, "Failed to add end point with uri '{0}'", uri));
+            Helpers.TryCatch(_log,
+                () => _host.AddServiceEndpoint(typeof(ITargetsPeer), new TcpStreamBindng(), uri),
+                ex => Helpers.ThrowNew<WcfTargetException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
 
             Helpers.TimedAction(
                 () => _host.Open(timeout), "Failed to open hosting service in {0} millis", timeout.TotalMilliseconds);
@@ -73,24 +74,27 @@ namespace l4p.VcallModel.Target
 
     class ContextualHost : ServiceHost
     {
-        private ITargetPeer _peer;
+        private ITargetsPeer _channel;
 
-        public ContextualHost(ITargetPeer peer)
+        public ContextualHost(ITargetsPeer channel)
             : base(typeof(ContextualPeer))
         {
-            _peer = peer;
+            _channel = channel;
         }
 
-        class ContextualPeer : ITargetPeer
+        class ContextualPeer : ITargetsPeer
         {
-            private ITargetPeer peer()
+            private static ITargetsPeer Channel
             {
-                var context = (ContextualHost)OperationContext.Current.Host;
-                return context._peer;
+                get
+                {
+                    var context = (ContextualHost) OperationContext.Current.Host;
+                    return context._channel;
+                }
             }
 
-            void ITargetPeer.HostIsOpened(string hostTag) { peer().HostIsOpened(hostTag); }
-            void ITargetPeer.HostIsClosed(string hostTag) { peer().HostIsClosed(hostTag); }
+            void ITargetsPeer.RegisterHosting(HostingInfo info) { Channel.RegisterHosting(info); }
+            void ITargetsPeer.CancelHosting(string hostingTag) { Channel.CancelHosting(hostingTag); }
         }
 
     }

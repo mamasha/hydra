@@ -9,7 +9,8 @@ using System;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.ServiceModel.Discovery;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Core;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Discovery
 {
@@ -21,36 +22,42 @@ namespace l4p.VcallModel.Discovery
         void Stop();
 
         void SendHelloMessage(EndpointDiscoveryMetadata edm);
+
+        DebugCounters Counters { get; }
     }
 
     class WcfDiscovery : IWcfDiscovery
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<WcfDiscovery>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly ILogger _log = Logger.New<HostResolver>();
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private HostResolverConfiguration _config;
-        private IHostResolver _resolver;
+        private readonly Self _self;
+        private readonly IEngine _engine;
 
+        private readonly Object _mutex;
         private readonly ServiceEndpoint _serviceEndpoint;
         private readonly ServiceHost _announcementService;
         private readonly AnnouncementClient _announcementCleint;
+
+        private readonly DebugCounters _counters;
 
         #endregion
 
         #region construction
 
-        public WcfDiscovery(IHostResolver resolver, HostResolverConfiguration config)
+        public WcfDiscovery(Self self, IEngine engine)
         {
-            _config = config;
-            _resolver = resolver;
+            _self = self;
+            _engine = engine;
 
             var listener = new AnnouncementService();
 
             listener.OnlineAnnouncementReceived +=
                 (sender, args) => handle_hello_message(args.EndpointDiscoveryMetadata);
 
+            _mutex = new Object();
             _serviceEndpoint = new UdpAnnouncementEndpoint();
             _announcementService = new ServiceHost(listener);
             _announcementService.AddServiceEndpoint(_serviceEndpoint);
@@ -64,15 +71,50 @@ namespace l4p.VcallModel.Discovery
 
         private void handle_hello_message(EndpointDiscoveryMetadata edm)
         {
-            try
+            string callbackUri;
+            string role;
+
+            lock (_mutex)
             {
-                var lastSeen = DateTime.Now;
-                _resolver.HandleHelloMessage(edm, lastSeen);
+                _counters.HelloMsgsRecieved++;
+
+                if (edm.Scopes.Count != 1)
+                {
+                    _counters.HelloMsgsFiltered++;
+                    return;
+                }
+
+                if (edm.ListenUris.Count != 1)
+                {
+                    _counters.HelloMsgsFiltered++;
+                    return;
+                }
+
+                if (edm.ContractTypeNames.Count != 1)
+                {
+                    _counters.HelloMsgsFiltered++;
+                    return;
+                }
+
+                Uri resolvingScope = edm.Scopes[0];
+
+                if (resolvingScope != _self.resolvingScope)
+                {
+                    _counters.HelloMsgsFiltered++;
+                    _counters.OtherHelloMsgsReceived++;
+                    return;
+                }
+
+                callbackUri = edm.ListenUris[0].ToString();
+                role = edm.ContractTypeNames[0].Name;
+
+                _counters.MyHelloMsgsReceived++;
             }
-            catch (Exception ex)
-            {
-                _log.Error(ex.GetDetailedStackTrace());
-            }
+
+            var lastSeen = DateTime.Now;
+
+            _self.thread.PostAction(
+                () => _engine.HandleHelloMessage(callbackUri, role, lastSeen));
         }
 
         #endregion
@@ -86,7 +128,7 @@ namespace l4p.VcallModel.Discovery
 
         void IWcfDiscovery.Start()
         {
-            var timeout = Helpers.TimeSpanFromMillis(_config.DiscoveryOpening);
+            var timeout = Helpers.TimeSpanFromMillis(_self.config.DiscoveryOpening);
 
             Helpers.TimedAction(
                 () => _announcementService.Open(timeout), "Failed to open announcement service in {0} millis", timeout.TotalMilliseconds);
@@ -98,7 +140,7 @@ namespace l4p.VcallModel.Discovery
 
         void IWcfDiscovery.Stop()
         {
-            var timeout = Helpers.TimeSpanFromMillis(_config.DiscoveryClosing);
+            var timeout = Helpers.TimeSpanFromMillis(_self.config.DiscoveryClosing);
 
             Helpers.TimedAction(
                 () => _announcementService.Close(timeout), "Failed to close announcement service in {0} millis", timeout.TotalMilliseconds);
@@ -109,6 +151,12 @@ namespace l4p.VcallModel.Discovery
         void IWcfDiscovery.SendHelloMessage(EndpointDiscoveryMetadata edm)
         {
             _announcementCleint.AnnounceOnlineAsync(edm);
+            _counters.HelloMsgsSent++;
+        }
+
+        DebugCounters IWcfDiscovery.Counters
+        {
+            get { return _counters; }
         }
 
         #endregion

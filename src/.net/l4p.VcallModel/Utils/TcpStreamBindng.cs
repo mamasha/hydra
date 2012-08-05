@@ -7,7 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System.ServiceModel;
 
-namespace l4p.VcallModel.Helpers
+namespace l4p.VcallModel.Utils
 {
     class TcpStreamBindng : NetTcpBinding
     {

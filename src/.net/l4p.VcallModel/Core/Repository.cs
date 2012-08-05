@@ -8,7 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
@@ -25,7 +25,7 @@ namespace l4p.VcallModel.Core
         #region members
 
         private static readonly ILogger _log = Logger.New<Repository>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private List<ICommNode> _nodes;
 
@@ -50,19 +50,24 @@ namespace l4p.VcallModel.Core
 
         private void add_node(ICommNode node)
         {
-            var nodes = new List<ICommNode>(_nodes);
-            nodes.Add(node);
-            _nodes = nodes;
+            var nodes = _nodes;
+
+            var newNodes = new List<ICommNode>(nodes);
+            newNodes.Add(node);
+
+            _nodes = newNodes;
         }
 
         private void remove_node(ICommNode nodeToRemove)
         {
-            var nodes =
-                from node in _nodes
+            var nodes = _nodes;
+
+            var newNodes =
+                from node in nodes
                 where !ReferenceEquals(node, nodeToRemove)
                 select node;
 
-            _nodes = nodes.ToList();
+            _nodes = newNodes.ToList();
         }
 
         #endregion

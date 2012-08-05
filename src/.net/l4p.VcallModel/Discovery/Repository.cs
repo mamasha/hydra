@@ -8,35 +8,61 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Core;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Discovery
 {
+    class Publisher
+    {
+        public Uri CallbackUri { get; set; }
+        public string Role { get; set; }
+        public string Tag { get; set; }
+    }
+
+    class Subscriber
+    {
+        public PublishNotification OnPublish { get; set; }
+        public string Tag { get; set; }
+    }
+
+    struct RemotePeer
+    {
+        public string CallbackUri { get; set; }
+        public string Role { get; set; }
+        public DateTime LastSeen { get; set; }
+    }
+
     interface IRepository
     {
         void Add(Publisher publisher);
-        string[] Add(Subscriber subscriber);
-
-        Publisher RemovePublisher(ICommNode node);
-        Subscriber RemoveSubscriber(ICommNode node);
-
+        void Remove(Publisher publisher);
         Publisher[] GetPublishers();
+
+        void Add(Subscriber subscriber);
+        void Remove(Subscriber subscriber);
         Subscriber[] GetSubscribers();
 
-        Subscriber[] AddHelloMessage(string callbackUri, DateTime lastSeen);
-        List<Action> RemoveDeadHosts(DateTime now, int alivePeriod);
+        void AddPeer(RemotePeer peer);
+        bool HasPeer(string callbackUri);
+        RemotePeer[] GetPeers();
+        RemotePeer[] GetDeadPeers(DateTime lastSeen);
+        void RemovePeers(RemotePeer[] peers);
+
+        DebugCounters Counters { get; }
     }
 
     class Repository : IRepository
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<Repository>();
-        private static readonly IHelpers Helpers = LoggedHelpers.New(_log);
+        private static readonly IHelpers Helpers = Helpers;
 
-        private List<Publisher> _publishers;
-        private List<Subscriber> _subscribers;
-        private Dictionary<string, DateTime> _aliveHosts;
+        private readonly List<Publisher> _publishers;
+        private readonly List<Subscriber> _subscribers;
+        private readonly Dictionary<string, RemotePeer> _peers;
+
+        private readonly DebugCounters _counters;
 
         #endregion
 
@@ -46,10 +72,102 @@ namespace l4p.VcallModel.Discovery
         {
             _publishers = new List<Publisher>();
             _subscribers = new List<Subscriber>();
-            _aliveHosts = new Dictionary<string, DateTime>();
+            _peers = new Dictionary<string, RemotePeer>();
+            _counters = new DebugCounters();
         }
 
         #endregion
+
+        #region Implementation of IRepository
+
+        void IRepository.Add(Publisher publisher)
+        {
+            _publishers.Add(publisher);
+            _counters.ActivePublishers++;
+        }
+
+        void IRepository.Remove(Publisher publisher)
+        {
+            bool wasThere = _publishers.Remove(publisher);
+
+            if (wasThere)
+                _counters.ActivePublishers--;
+        }
+
+        Publisher[] IRepository.GetPublishers()
+        {
+            return
+                _publishers.ToArray();
+        }
+
+        void IRepository.Add(Subscriber subscriber)
+        {
+            _subscribers.Add(subscriber);
+            _counters.ActiveSubscribers++;
+        }
+
+        void IRepository.Remove(Subscriber subscriber)
+        {
+            bool wasThere = _subscribers.Remove(subscriber);
+
+            if (wasThere)
+                _counters.ActiveSubscribers--;
+        }
+
+        Subscriber[] IRepository.GetSubscribers()
+        {
+            return
+                _subscribers.ToArray();
+        }
+
+        void IRepository.AddPeer(RemotePeer peer)
+        {
+            _peers[peer.CallbackUri] = peer;
+            _counters.AliveRemotePeers++;
+        }
+
+        bool IRepository.HasPeer(string callbackUri)
+        {
+            return
+                _peers.ContainsKey(callbackUri);
+        }
+
+        RemotePeer[] IRepository.GetPeers()
+        {
+            return
+                _peers.Values.ToArray();
+        }
+
+        RemotePeer[] IRepository.GetDeadPeers(DateTime lastSeen)
+        {
+            var peers =
+                from peer in _peers.Values
+                where peer.LastSeen < lastSeen
+                select peer;
+
+            return
+                peers.ToArray();
+        }
+
+        void IRepository.RemovePeers(RemotePeer[] peers)
+        {
+            foreach (var peer in peers)
+            {
+                bool wasThere = _peers.Remove(peer.CallbackUri);
+
+                if (wasThere)
+                    _counters.AliveRemotePeers--;
+            }
+        }
+
+        DebugCounters IRepository.Counters
+        {
+            get { return _counters; }
+        }
+
+        #endregion
+
+/*
 
         #region IRepository
 
@@ -77,7 +195,7 @@ namespace l4p.VcallModel.Discovery
                 aliveHosts.Keys.ToArray();
         }
 
-        public Publisher RemovePublisher(ICommNode node)
+        void IRepository.Remove(Publisher publisher)
         {
             var publishers = _publishers;
 
@@ -133,7 +251,7 @@ namespace l4p.VcallModel.Discovery
                 subscribers.ToArray();
         }
 
-        Subscriber[] IRepository.AddHelloMessage(string callbackUri, DateTime lastSeen)
+        Subscriber[] IRepository.AddAliveHost(string callbackUri, DateTime lastSeen)
         {
             var subscribers = _subscribers;
             var aliveHosts = _aliveHosts;
@@ -151,6 +269,14 @@ namespace l4p.VcallModel.Discovery
 
             return 
                 subscribers.ToArray();
+        }
+
+        string[] IRepository.GetAliveHosts()
+        {
+            var aliveHosts = _aliveHosts;
+
+            return
+                aliveHosts.Keys.ToArray();
         }
 
         List<Action> IRepository.RemoveDeadHosts(DateTime now, int alivePeriod)
@@ -186,5 +312,7 @@ namespace l4p.VcallModel.Discovery
         }
 
         #endregion
+*/
+
     }
 }

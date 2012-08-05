@@ -9,7 +9,7 @@ using System;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
-using l4p.VcallModel.Helpers;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
@@ -29,7 +29,15 @@ namespace l4p.VcallModel.Core
         [DataMember] public int TargetsOpened { get; set; }
         [DataMember] public int TargetsClosed { get; set; }
 
-        [DataMember] public int Target_ConnectedHosts { get; set; }
+        [DataMember] public int ActivePublishers { get; set; }
+        [DataMember] public int ActiveSubscribers { get; set; }
+        [DataMember] public int AliveRemotePeers { get; set; }
+
+        [DataMember] public int Targets_AliveHosts { get; set; }
+        [DataMember] public int Targets_DeadHosts { get; set; }
+        [DataMember] public int Targets_SubscribeTargets { get; set; }
+
+        [DataMember] public int Hosting_SubscribedTargets { get; set; }
         [DataMember] public int Hosting_ConnectedTargets { get; set; }
     }
 
