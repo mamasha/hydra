@@ -12,7 +12,7 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Target
 {
-    public class WcfTargetException : Exception
+    public class WcfTargetException : VcallModelException
     {
         public WcfTargetException() { }
         public WcfTargetException(string message) : base(message) { }
@@ -93,7 +93,7 @@ namespace l4p.VcallModel.Target
                 }
             }
 
-            void ITargetsPeer.RegisterHosting(HostingInfo info) { Channel.RegisterHosting(info); }
+            void ITargetsPeer.SubscribeHosting(HostingInfo info) { Channel.SubscribeHosting(info); }
             void ITargetsPeer.CancelHosting(string hostingTag) { Channel.CancelHosting(hostingTag); }
         }
 

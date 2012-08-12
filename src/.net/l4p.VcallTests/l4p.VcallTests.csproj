@@ -44,9 +44,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DiscoveryTests.cs" />
+    <Compile Include="Core\ActiveThreadWithDurablesTests.cs" />
+    <Compile Include="Discovery\DiscoveryTests.cs" />
     <Compile Include="HostingStubsErrorsTests.cs" />
     <Compile Include="HostingStubsTests.cs" />
+    <Compile Include="Core\FillPropertiesOfTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SmellTests.cs" />
   </ItemGroup>
@@ -56,6 +58,7 @@
       <Name>l4p.VcallModel</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

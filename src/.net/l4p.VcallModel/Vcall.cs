@@ -11,18 +11,11 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel
 {
-    public class VcallException : Exception
+    public class VcallException : VcallModelException
     {
         public VcallException() { }
         public VcallException(string message) : base(message) { }
         public VcallException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    public class InternalException : Exception
-    {
-        public InternalException() { }
-        public InternalException(string message) : base(message) { }
-        public InternalException(string message, Exception inner) : base(message, inner) { }
     }
 
     public sealed class Vcall
@@ -34,7 +27,6 @@ namespace l4p.VcallModel
 
         private static readonly object _startMutex = new Object();
 
-        private static VcallConfiguration _config;
         private static IVcallSubsystem _core;
         private static IVhosting _defaultHosting;
         private static IVtarget _defaultTarget;
@@ -62,20 +54,19 @@ namespace l4p.VcallModel
                 Helpers.MakeNew<VcallException>(null, _log, "Vcall has not been initialized. Call StartServices() first.");
         }
 
-        private static void start_services(VcallConfiguration config)
+        private static void start_services(VcallConfiguration vconfig)
         {
             if (_core != null)
                 return;
 
             var core = Helpers.TryCatch(_log,
-                () => VcallSubsystem.New(config),
+                () => VcallSubsystem.New(vconfig),
                 ex => Helpers.ThrowNew<VcallException>(ex, _log, "Failed to create Vcall subsystem"));
 
             Helpers.TryCatch(_log,
                 () => core.Start(),
                 ex => Helpers.ThrowNew<VcallException>(ex, _log, "Failed to start Vcall subsystem"));
 
-            _config = config;
             _core = core;
             _defaultHosting = null;
             _defaultTarget = null;
@@ -94,7 +85,6 @@ namespace l4p.VcallModel
 
             _defaultHosting = null;
             _defaultTarget = null;
-            _config = null;
             _core = null;
 
             try
@@ -136,7 +126,7 @@ namespace l4p.VcallModel
             try
             {
                 return
-                    _core.NewTarget(config);
+                    _core.NewTargets(config);
             }
             catch (Exception ex)
             {
@@ -169,16 +159,28 @@ namespace l4p.VcallModel
         #region API
 
         /// <summary>
+        /// Gets the actual configuration of a running Vcall system
+        /// </summary>
+        public static VcallConfiguration Config
+        {
+            get
+            {
+                assert_services_are_started();
+                return _core.Config;
+            }
+        }
+
+        /// <summary>
         /// Initialize and start essential services of Vcall system.
         /// Should be called before any other Vcall functionality is accessed </summary>
         /// <remarks>Subsiquent calls to StartServices() are ignored</remarks>
         public static void StartServices()
         {
-            var config = new VcallConfiguration();
+            var vconfig = new VcallConfiguration();
 
             lock (_startMutex)
             {
-                start_services(config);
+                start_services(vconfig);
             }
         }
 
@@ -189,27 +191,27 @@ namespace l4p.VcallModel
         /// <remarks>Subsiquent calls to StartServices() are ignored</remarks>
         public static void StartServices(string resolvingKey)
         {
-            var config = new VcallConfiguration
-                             {
-                                 ResolvingKey = resolvingKey
-                             };
+            var vconfig = new VcallConfiguration
+            {
+                ResolvingKey = resolvingKey
+            };
 
             lock (_startMutex)
             {
-                start_services(config);
+                start_services(vconfig);
             }
         }
 
         /// <summary>
         /// Initialize and start essential services of Vcall system.
         /// Should be called before any other Vcall functionality is accessed </summary>
-        /// <param name="config">Configuration to be used</param>
+        /// <param name="vconfig">Configuration to be used</param>
         /// <remarks>Subsiquent calls to StartServices() are ignored</remarks>
-        public static void StartServices(VcallConfiguration config)
+        public static void StartServices(VcallConfiguration vconfig)
         {
             lock (_startMutex)
             {
-                start_services(config);
+                start_services(vconfig);
             }
         }
 
@@ -310,7 +312,7 @@ namespace l4p.VcallModel
         {
             assert_services_are_started();
             return
-                _core.NewTarget(new TargetConfiguration());
+                _core.NewTargets(new TargetConfiguration());
         }
 
         /// <summary>
@@ -321,7 +323,7 @@ namespace l4p.VcallModel
         {
             assert_services_are_started();
             return
-                _core.NewTarget(new TargetConfiguration { NameSpace = @namespace });
+                _core.NewTargets(new TargetConfiguration { NameSpace = @namespace });
         }
 
         /// <summary>

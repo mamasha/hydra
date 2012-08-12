@@ -8,7 +8,7 @@ namespace l4p.VcallModel
         public string DiscoveryScopePattern { get; set; }
 
         public int? Port { get; set; }
-        public string HostingUriPattern { get; set; }
+        public string CallbackUriPattern { get; set; }
 
         public int AddressInUseRetries { get; set; }
         public Timeouts Timeouts { get; set; }
@@ -17,7 +17,7 @@ namespace l4p.VcallModel
         {
             ResolvingKey = Guid.NewGuid().ToString("B");
             DiscoveryScopePattern = "udp://l4p.vcallmodel/discovery/{0}/";
-            HostingUriPattern = "net.tcp://{0}:{1}/host/{2}/";
+            CallbackUriPattern = "net.tcp://{0}:{1}/{2}/{3}/";
             AddressInUseRetries = 3;
             Timeouts = new Timeouts();
         }
@@ -39,6 +39,9 @@ namespace l4p.VcallModel
         public int HostingClosing { get; set; }
         public int TargetOpening { get; set; }
 
+        public int DurableQueue_NoDurablesIdle { get; set; }
+        public int ActiveThread_FailureTimeout { get; set; }
+
         public Timeouts()
         {
             const int OpenWcfHostTimeout = 5000;
@@ -51,6 +54,9 @@ namespace l4p.VcallModel
             HostingOpening = OpenWcfHostTimeout;
             HostingClosing = CloseWcfHostTimeout;
             TargetOpening = OpenWcfHostTimeout;
+
+            DurableQueue_NoDurablesIdle = 1000;
+            ActiveThread_FailureTimeout = 10000;
         }
     }
 

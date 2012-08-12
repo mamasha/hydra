@@ -12,13 +12,33 @@ using l4p.VcallModel;
 using l4p.VcallModel.Core;
 using NUnit.Framework;
 
-namespace l4p.VcallTests
+namespace l4p.VcallTests.Discovery
 {
     [TestFixture]
     class DiscoveryTests
     {
-        [SetUp] void StartVcallSerives() { Vcall.StartServices(); }
+        [SetUp] void StartVcallSerives() { Vcall.StartServices("l4p.vcalltests"); }
         [TearDown] void StopVcallServices() { Vcall.StopServices(); }
+
+        [Test, Explicit]
+        public void SingleTargets_shoul_connect_to_hosting()
+        {
+            var targets = Vcall.GetTargets();
+
+            Thread.Sleep(5000*1000);
+
+            targets.Close();
+        }
+
+        [Test, Explicit]
+        public void SingleHosting_shoul_connect_to_targets()
+        {
+            var hosting = Vcall.NewHosting();
+
+            Thread.Sleep(1000 * 1000);
+
+            hosting.Close();
+        }
 
         [Test, Explicit]
         public void SmellTest_should_get_self_notifications()

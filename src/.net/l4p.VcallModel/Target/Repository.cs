@@ -7,11 +7,14 @@ namespace l4p.VcallModel.Target
 {
     interface IRepository
     {
+        void CleanUp(string id);
+
         void AddHosting(HostingInfo info);
         void RemoveHosting(string tag);
+        bool HasHosting(HostingInfo info);
 //        void HostIdDead(string callbackUri);
 
-        int HostingsCount { get; }
+        int AliveCount { get; }
     }
 
     class Repository : IRepository
@@ -42,9 +45,15 @@ namespace l4p.VcallModel.Target
 
         #region IRepository
 
+        void IRepository.CleanUp(string id)
+        {
+            throw
+                Helpers.NewNotImplementedException();
+        }
+
         void IRepository.AddHosting(HostingInfo info)
         {
-            throw 
+            throw
                 Helpers.NewNotImplementedException();
         }
 
@@ -54,7 +63,13 @@ namespace l4p.VcallModel.Target
                 Helpers.NewNotImplementedException();
         }
 
-        int IRepository.HostingsCount
+        bool IRepository.HasHosting(HostingInfo info)
+        {
+            throw
+                Helpers.NewNotImplementedException();
+        }
+
+        int IRepository.AliveCount
         {
             get
             {

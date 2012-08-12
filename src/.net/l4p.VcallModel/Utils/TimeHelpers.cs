@@ -54,11 +54,5 @@ namespace l4p.VcallModel.Utils
                     new TimeoutException(errMsg, ex);
             }
         }
-
-        public static TimeSpan TimeSpanFromMillis(this IHelpers Helpers, int milliseconds)
-        {
-            return
-                new TimeSpan(0, 0, 0, 0, milliseconds);
-        }
     }
 }

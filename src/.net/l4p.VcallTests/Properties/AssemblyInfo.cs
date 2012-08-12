@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("l4p.VcallTests")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Tests of distributed functions model")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Mamasha Knows Ltd.")]
 [assembly: AssemblyProduct("l4p.VcallTests")]
-[assembly: AssemblyCopyright("Copyright ©  2012")]
+[assembly: AssemblyCopyright("Copyright © Mamasha Knows 2010-2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("3.0.0.0")]
+[assembly: AssemblyFileVersion("3.0.0.0")]

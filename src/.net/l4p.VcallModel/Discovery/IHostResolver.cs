@@ -23,7 +23,7 @@ namespace l4p.VcallModel.Discovery
         public int DiscoveryClosing { get; set; }
     }
 
-    class HostResolverException : Exception
+    class HostResolverException : VcallModelException
     {
         public HostResolverException() { }
         public HostResolverException(string message) : base(message) { }
@@ -35,8 +35,9 @@ namespace l4p.VcallModel.Discovery
         void Start();
         void Stop();
 
-        IRevertable Publish(string callbackUri, string role, string tag);
-        IRevertable Subscribe(PublishNotification onPublish, string tag);
+        void Publish(string callbackUri, string role, string tag);
+        void Subscribe(PublishNotification onPublish, string tag);
+        void Cancel(string tag);
 
         DebugCounters Counters { get; }
     }

@@ -12,7 +12,7 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
-    public class WcfHostringException : Exception
+    public class WcfHostringException : VcallModelException
     {
         public WcfHostringException() { }
         public WcfHostringException(string message) : base(message) { }

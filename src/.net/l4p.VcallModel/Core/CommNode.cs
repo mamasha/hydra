@@ -12,7 +12,16 @@ namespace l4p.VcallModel.Core
 {
     abstract class CommNode : ICommNode
     {
+        #region constants
+
+        protected readonly int _subscribe_RetryTimeout = 1000;
+
+        #endregion
+
         #region members
+
+        public const string HostingRole = "hosting";
+        public const string TargetsRole = "targets";
 
         protected readonly string _tag;
 
@@ -45,13 +54,7 @@ namespace l4p.VcallModel.Core
 
         DebugCounters ICommNode.DebugCounters
         {
-            get
-            {
-                var counters = new DebugCounters();
-                counters.Accumulate(_counters);
-
-                return counters;
-            }
+            get { return DebugCounters.AccumulateAll(_counters); }
         }
 
         void ICommNode.Stop(Internal access, TimeSpan timeout)

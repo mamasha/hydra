@@ -23,10 +23,10 @@ namespace l4p.VcallModel.Core
         void Stop();
 
         IVhosting NewHosting(HostingConfiguration config);
-        IVtarget NewTarget(TargetConfiguration config);
+        IVtarget NewTargets(TargetConfiguration config);
 
         void CloseHosting(ICommNode node);
-        void CloseTarget(ICommNode node);
+        void CloseTargets(ICommNode node);
 
         DebugCounters DebugCounters { get; }
     }
@@ -50,23 +50,15 @@ namespace l4p.VcallModel.Core
 
         #region construction
 
-        public static IVcallSubsystem New(VcallConfiguration config)
+        public static IVcallSubsystem New(VcallConfiguration vconfig)
         {
             return
-                new VcallSubsystem(config);
+                new VcallSubsystem(vconfig);
         }
 
         private VcallSubsystem(VcallConfiguration vconfig)
         {
-            var resolvingConfig = new HostResolverConfiguration
-            {
-                ResolvingKey = vconfig.ResolvingKey,
-                HelloMessageGap = vconfig.Timeouts.HelloMessageGap,
-                ByeMessageGap = vconfig.Timeouts.ByeMessageGap,
-                DiscoveryScopePattern = vconfig.DiscoveryScopePattern,
-                DiscoveryOpening = vconfig.Timeouts.DiscoveryOpening,
-                DiscoveryClosing = vconfig.Timeouts.DiscoveryClosing
-            };
+            var resolvingConfig = FillPropertiesOf<HostResolverConfiguration>.From(vconfig);
 
             _mutex = new Object();
             _vconfig = vconfig;
@@ -81,13 +73,13 @@ namespace l4p.VcallModel.Core
             node.Stop(_internalAccess, timeout);
         }
 
-        protected string make_dynamic_uri(string tag)
+        protected string make_dynamic_uri(string tag, string role)
         {
             string hostname = "localhost";
             int port = _vconfig.Port ?? Helpers.FindAvailableTcpPort();
 
             return
-                String.Format(_vconfig.HostingUriPattern, hostname, port, tag);
+                String.Format(_vconfig.CallbackUriPattern, hostname, port, role, tag);
         }
 
         #endregion
@@ -109,15 +101,15 @@ namespace l4p.VcallModel.Core
             return counters;
         }
 
-        private IVhosting new_hostring(HostingConfiguration config)
+        private HostingPeer new_hostring(HostingConfiguration config)
         {
-            var timeout = Helpers.TimeSpanFromMillis(_vconfig.Timeouts.HostingOpening);
+            var timeout = TimeSpan.FromMilliseconds(_vconfig.Timeouts.HostingOpening);
             int addressInUseRetries = 0;
 
             for (;;)
             {
                 var hosting = new HostingPeer(config, this);
-                string uri = make_dynamic_uri(hosting.Tag);
+                string uri = make_dynamic_uri(hosting.Tag, "hosting");
 
                 try
                 {
@@ -145,20 +137,20 @@ namespace l4p.VcallModel.Core
             }
         }
 
-        private TargetsPeer new_target(TargetConfiguration config)
+        private TargetsPeer new_targets(TargetConfiguration config)
         {
-            var timeout = Helpers.TimeSpanFromMillis(_vconfig.Timeouts.TargetOpening);
+            var timeout = TimeSpan.FromMilliseconds(_vconfig.Timeouts.TargetOpening);
             int addressInUseRetries = 0;
 
             for (;;)
             {
-                var target = new TargetsPeer(config, this);
-                string uri = make_dynamic_uri(target.Tag);
+                var targets = new TargetsPeer(config, this);
+                string uri = make_dynamic_uri(targets.Tag, "targets");
 
                 try
                 {
-                    target.Start(uri, timeout);
-                    return target;
+                    targets.Start(uri, timeout);
+                    return targets;
                 }
                 catch (Exception ex)
                 {
@@ -173,7 +165,7 @@ namespace l4p.VcallModel.Core
                         }
 
                         throw Helpers.MakeNew<VcallException>(ex, _log,
-                            "targets.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", target.Tag, uri, addressInUseRetries);
+                            "targets.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", targets.Tag, uri, addressInUseRetries);
                     }
 
                     throw;
@@ -222,54 +214,59 @@ namespace l4p.VcallModel.Core
             var hosting = new_hostring(config);
             string callbackUri = hosting.ListeningUri;
 
-            _resolver.Publish(callbackUri, "hosting", hosting.Tag);
+            _resolver.Publish(callbackUri, CommNode.HostingRole, hosting.Tag);
+            _resolver.Subscribe(hosting.OnTargetsDiscovery, hosting.Tag);
 
             lock (_mutex)
             {
                 _repo.Add(hosting);
-                _counters.HostingsOpened++;
+                _counters.Vcall_Event_NewHosting++;
             }
 
             return hosting;
         }
 
-        IVtarget IVcallSubsystem.NewTarget(TargetConfiguration config)
+        IVtarget IVcallSubsystem.NewTargets(TargetConfiguration config)
         {
-            var target = new_target(config);
+            var targets = new_targets(config);
+            string callbackUri = targets.ListeningUri;
 
-            _resolver.Subscribe(target.OnHostingDiscovery, target.Tag);
+            _resolver.Publish(callbackUri, CommNode.TargetsRole, targets.Tag);
+            _resolver.Subscribe(targets.OnHostingDiscovery, targets.Tag);
 
             lock (_mutex)
             {
-                _repo.Add(target);
-                _counters.TargetsOpened++;
+                _repo.Add(targets);
+                _counters.Vcall_Event_NewTargets++;
             }
 
-            return target;
+            return targets;
         }
 
         void IVcallSubsystem.CloseHosting(ICommNode node)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
 
             lock (_mutex)
             {
                 _repo.Remove(node);
-                _counters.HostingsClosed++;
+                _counters.Vcall_Event_CloseHosting++;
             }
 
 //            _resolver.CancelPublishedHosting(node);
             close_comm_node(node);
         }
 
-        void IVcallSubsystem.CloseTarget(ICommNode node)
+        void IVcallSubsystem.CloseTargets(ICommNode node)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
 
             lock (_mutex)
             {
                 _repo.Remove(node);
-                _counters.TargetsClosed++;
+                _counters.Vcall_Event_CloseTargets++;
             }
 
 //            _resolver.CancelSubscribedTarget(node);

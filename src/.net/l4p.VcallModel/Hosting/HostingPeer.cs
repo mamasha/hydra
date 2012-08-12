@@ -24,10 +24,9 @@ namespace l4p.VcallModel.Hosting
         private readonly HostingConfiguration _config;
         private readonly IVcallSubsystem _core;
 
-        private readonly Object _mutex;
         private readonly IRepository _repo;
         private readonly IWcfHostring _wcf;
-        private readonly IHostingThread _thread;
+        private readonly IActiveThread _thr;
 
         private string _listeningUri;
 
@@ -39,10 +38,9 @@ namespace l4p.VcallModel.Hosting
         {
             _config = config;
             _core = core;
-            _mutex = new Object();
             _repo = Repository.New(this);
             _wcf = new WcfHosting(this);
-            _thread = HostringThread.New(_tag);
+            _thr = ActiveThread.New(String.Format("hosting.{0}", _tag));
         }
 
         #endregion
@@ -53,51 +51,94 @@ namespace l4p.VcallModel.Hosting
             _log.Trace("hosting.{0}: {1}", _tag, msg);
         }
 
-        private void update_targets_peer(TargetsInfo info)
-            // hosting thread
+        private void warn(string format, params object[] args)
         {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Warn("hosting.{0}: {1}", _tag, msg);
         }
 
-        private void connect_to_targets(TargetsInfo info)
-            // hosting thread
+        private void try_catch(Action action, Action onError, string errFmt, params object[] args)
+        {
+            try { action(); }
+            catch (Exception ex)
+            {
+                onError();
+                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+            }
+        }
+
+        private R try_catch<R>(Func<R> func, Action onError, string errFmt, params object[] args)
+        {
+            try { return func(); }
+            catch (Exception ex)
+            {
+                onError();
+                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+            }
+        }
+
+        private void handle_alive_targets(string callbackUri)
         {
             var myInfo = new HostingInfo
             {
                 Tag = _tag,
                 CallbackUri = _listeningUri,
                 NameSpace = _config.NameSpace,
-                HostName = "TBD"
+                HostName = Helpers.GetLocalhostFqdn()
             };
 
-            info.Proxy.RegisterHosting(myInfo);
-            _counters.Hosting_ConnectedTargets++;
+            _thr.DoOnce(_subscribe_RetryTimeout, callbackUri,
+                () => subsribe_self_to_targets(callbackUri, myInfo), "subscribe hosting.{0} to {1}", _tag, callbackUri);
+        }
 
-            lock (_mutex)
+        private void handle_dead_targets(string callbackUri)
+        {
+            _thr.Cancel(callbackUri);
+            _repo.CleanUp(callbackUri);
+
+            trace("targets at '{0}' is dead (targets={1})", callbackUri, _repo.TargetsCount);
+        }
+
+        private void subsribe_self_to_targets(string callbackUri, HostingInfo myInfo)
+        {
+            var targets = try_catch(
+                () => TargetsPeerProxy.New(callbackUri),
+                () => ++_counters.Hosting_Error_SubscribeSelfToTargets, "hosting.{0}: Failed to create proxy at '{1}'", _tag, callbackUri);
+
+            try_catch(
+                () => targets.SubscribeHosting(myInfo),
+                () => ++_counters.Hosting_Error_SubscribeSelfToTargets, "hosting.{0}: Failed to subscribe self at host '{1}'", _tag, callbackUri);
+
+            _counters.Hosting_Event_SubscribeSelfToTargets++;
+            trace("subscribed to targets '{0}' (targets={1})", callbackUri, _repo.TargetsCount);
+        }
+
+        private void update_targets_peer(TargetsInfo info)
+        {
+            // generate update messages
+            int count = 0;
+
+            trace("{0} update messages are generated", count);
+        }
+
+        private void subscribe_targets(TargetsInfo info)
+        {
+            trace("Got a new targets.{0} at '{1}'", info.Tag, info.ListeningUri);
+
+            if (_repo.HasTargets(info))
             {
-                _repo.AddTargets(info);
+                trace("targets.{0} at {1} is already registered", info.Tag, info.ListeningUri);
+                _counters.Hosting_Event_AlreadyHereTargets++;
+                return;
             }
+
+            _repo.AddTargets(info);
+            _counters.Hosting_Event_SubscribeTargets++;
 
             update_targets_peer(info);
         }
 
-        private void subscribe_targets(TargetsInfo info)
-            // hosting thread
-        {
-            trace("Got new targets.{0} at '{1}'", info.Tag, info.ListeningUri);
-
-            info.Proxy = TargetsPeerProxy.New(info.ListeningUri);
-
-            lock (_mutex)
-            {
-                _repo.AddTargets(info);
-                _counters.Hosting_SubscribedTargets++;
-            }
-
-            connect_to_targets(info);
-        }
-
         private void cancel_targets(string targetsTag)
-            // hosting thread
         {
             trace("targets.{0} is canceled", targetsTag);
         }
@@ -112,7 +153,7 @@ namespace l4p.VcallModel.Hosting
                 () => _wcf.Start(uri, timeout),
                 ex => Helpers.ThrowNew<HostingPeerException>(ex, _log, "Failed to start hosting.{0} at '{1}'", _tag, uri));
 
-            _thread.Start();
+            _thr.Start();
 
             trace("host is started");
         }
@@ -122,6 +163,33 @@ namespace l4p.VcallModel.Hosting
             get { return _tag; }
         }
 
+        public void OnTargetsDiscovery(string callbackUri, string role, bool alive)
+            // discovery thread
+        {
+            if (role != TargetsRole)
+                return;
+
+            if (alive)
+            {
+                _thr.PostAction(
+                    () => handle_alive_targets(callbackUri));
+
+                _counters.Hosting_Event_AliveHosts++;
+            }
+            else
+            {
+                _thr.PostAction(
+                    () => handle_dead_targets(callbackUri));
+
+                _counters.Hosting_Event_DeadHosts++;
+            }
+        }
+
+        public string ListeningUri
+        {
+            get { return _listeningUri; }
+        }
+
         #endregion
 
         #region IHostingPeer
@@ -129,14 +197,14 @@ namespace l4p.VcallModel.Hosting
         void IHostingPeer.SubscribeTargets(TargetsInfo info)
             // one way message; arbitrary WCF thread
         {
-            _thread.PostAction(
+            _thr.PostAction(
                 () => subscribe_targets(info), "Sibscribing targets.{0} peer at '{1}'", info.Tag, info.ListeningUri);
         }
 
         void IHostingPeer.CancelTargets(string targetsTag)
-            // one way message
+            // one way message; arbitrary WCF thread
         {
-            _thread.PostAction(
+            _thr.PostAction(
                 () => cancel_targets(targetsTag), "Canceling targets.{0}", targetsTag);
         }
 
@@ -145,11 +213,11 @@ namespace l4p.VcallModel.Hosting
         #region protected api
 
         protected override void Stop(TimeSpan timeout)
-            // one way message; arbitrary WCF thread
         {
+            // notify all targets
 
             _wcf.Stop(timeout);
-            _thread.Stop();
+            _thr.Stop();
 
             trace("hosting is stopped");
         }

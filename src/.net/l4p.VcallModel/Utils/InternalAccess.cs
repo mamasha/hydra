@@ -10,10 +10,10 @@ using System.Reflection;
 
 namespace l4p.VcallModel.Utils
 {
-    public class InternalAccessException : Exception
+    public class InternalAccessException : VcallModelException
     {
         public InternalAccessException() { }
-        public InternalAccessException(string message) : base(message) { }
+        public InternalAccessException(string message) { }
         public InternalAccessException(string message, Exception inner) : base(message, inner) { }
     }
 

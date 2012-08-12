@@ -13,7 +13,7 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Target
 {
-    class TargetsPeerException : Exception
+    class TargetsPeerException : VcallModelException
     {
         public TargetsPeerException() { }
         public TargetsPeerException(string message) : base(message) { }
@@ -35,7 +35,7 @@ namespace l4p.VcallModel.Target
     interface ITargetsPeer
     {
         [OperationContract(IsOneWay = true)]
-        void RegisterHosting(HostingInfo info);
+        void SubscribeHosting(HostingInfo info);
 
         [OperationContract(IsOneWay = true)]
         void CancelHosting(string hostingTag);
@@ -53,7 +53,7 @@ namespace l4p.VcallModel.Target
             base(new TcpStreamBindng(), new EndpointAddress(uri))
         { }
 
-        void ITargetsPeer.RegisterHosting(HostingInfo info) { Channel.RegisterHosting(info); }
+        void ITargetsPeer.SubscribeHosting(HostingInfo info) { Channel.SubscribeHosting(info); }
         void ITargetsPeer.CancelHosting(string hostingTag) { Channel.CancelHosting(hostingTag); }
     }
 }

@@ -10,10 +10,8 @@ namespace l4p.VcallModel.Discovery
     interface IEngine
     {
         void Publish(Publisher publisher);
-        void UnPublish(Publisher publisher);
-
         void Subscribe(Subscriber subscriber);
-        void UnSubscribe(Subscriber subscriber);
+        void Cancel(string tag);
 
         void HandleHelloMessage(string callbackUri, string role, DateTime lastSeen);
         void SendHelloMessages();
@@ -86,6 +84,32 @@ namespace l4p.VcallModel.Discovery
             }
         }
 
+        private void cancel_publishers(string tag)
+        {
+            var publishers = _self.repo.GetPublishers(tag);
+
+            if (publishers.Length == 0)
+                return;
+
+            Array.ForEach(publishers, 
+                publisher => _self.repo.Remove(publisher));
+
+            trace("hosting.{0} is canceled (count={1})", tag, publishers.Length);
+        }
+
+        private void cancel_subscribers(string tag)
+        {
+            var subscribers = _self.repo.GetSubscribers(tag);
+
+            if (subscribers.Length == 0)
+                return;
+
+            Array.ForEach(subscribers,
+                subscriber => _self.repo.Remove(subscriber));
+
+            trace("target.{0} is canceled (count={1})", tag, subscribers.Length);
+        }
+
         #endregion
 
         #region IEngine
@@ -99,13 +123,6 @@ namespace l4p.VcallModel.Discovery
             trace("hosing.{0} ({1}) is published at '{2}'", publisher.Tag, publisher.Role, publisher.CallbackUri);
         }
 
-        void IEngine.UnPublish(Publisher publisher)
-        {
-            _self.repo.Remove(publisher);
-
-            trace("hostring.{0} ({1}) is unpublished", publisher.Tag, publisher.Role);
-        }
-
         void IEngine.Subscribe(Subscriber subscriber)
         {
             _self.repo.Add(subscriber);
@@ -115,17 +132,20 @@ namespace l4p.VcallModel.Discovery
             trace("targets.{0} is subscribed", subscriber.Tag);
         }
 
-        void IEngine.UnSubscribe(Subscriber subscriber)
+        void IEngine.Cancel(string tag)
         {
-            _self.repo.Remove(subscriber);
-
-            trace("targets.{0} is canceled", subscriber.Tag);
+            cancel_publishers(tag);
+            cancel_subscribers(tag);
         }
 
         void IEngine.HandleHelloMessage(string callbackUri, string role, DateTime lastSeen)
         {
             if (_self.repo.HasPeer(callbackUri))
+            {
+                _counters.Discovery_Event_HelloMsgIsKeepAlive++;
+                _self.repo.KeepAlive(callbackUri, lastSeen);
                 return;
+            }
 
             var peer = new RemotePeer
                            {
@@ -143,8 +163,7 @@ namespace l4p.VcallModel.Discovery
                 fire_notification(subscriber, callbackUri, role, true);
             }
 
-            _counters.HelloNotificationsProduced += subscribers.Length;
-
+            _counters.Discovery_Event_HelloNotificationsProduced += subscribers.Length;
             trace("{0} hello notifications are generated", subscribers.Length);
         }
 
@@ -165,7 +184,7 @@ namespace l4p.VcallModel.Discovery
 
         void IEngine.GenerateByeNotifications(DateTime now)
         {
-            var lastSeen = now - Helpers.TimeSpanFromMillis(_self.config.ByeMessageGap);
+            var lastSeen = now - TimeSpan.FromMilliseconds(_self.config.ByeMessageGap);
 
             var peers = _self.repo.GetDeadPeers(lastSeen);
             var subscribers = _self.repo.GetSubscribers();
@@ -187,8 +206,9 @@ namespace l4p.VcallModel.Discovery
                 }
             }
 
-            _counters.ByeNotificationsProduced += notificationCount;
+            _self.repo.RemovePeers(peers);
 
+            _counters.Discovery_Event_ByeNotificationsProduced += notificationCount;
             trace("{0} bye notifications are generated", notificationCount);
         }
 

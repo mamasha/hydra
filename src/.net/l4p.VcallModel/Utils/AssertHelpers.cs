@@ -1,8 +1,16 @@
 ﻿using System;
 using System.Diagnostics;
+using l4p.VcallModel.Core;
 
 namespace l4p.VcallModel.Utils
 {
+    class AssertionException : VcallModelException
+    {
+        public AssertionException() { }
+        public AssertionException(string message) : base(message) { }
+        public AssertionException(string message, Exception inner) : base(message, inner) { }
+    }
+
     static class AssertHelpers
 	{
         public static void Assert<TException>(this IHelpers Helpers, bool expr, ILogger log)
@@ -22,7 +30,7 @@ namespace l4p.VcallModel.Utils
 
         public static void Assert(this IHelpers Helpers, bool expr, ILogger log)
         {
-            Helpers.Assert<InternalException>(expr, log);
+            Helpers.Assert<AssertionException>(expr, log);
         }
 
         public static void Assert<TException>(this IHelpers Helpers, bool expr, ILogger log, string format, params object[] args)
@@ -48,7 +56,7 @@ namespace l4p.VcallModel.Utils
 
         public static void Assert(this IHelpers Helpers, bool expr, ILogger log, string format, params object[] args)
         {
-            Helpers.Assert<InternalException>(expr, log, format, args);
+            Helpers.Assert<AssertionException>(expr, log, format, args);
         }
     }
 }

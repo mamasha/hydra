@@ -5,6 +5,8 @@ The contents of this file may not be disclosed to third parties,
 copied or duplicated in any form, in whole or in part.
 */
 
+using System;
+using System.Net.NetworkInformation;
 using System.Text;
 
 namespace l4p.VcallModel.Utils
@@ -37,6 +39,13 @@ namespace l4p.VcallModel.Utils
             { }
 
             return str;
+        }
+
+        public static string GetLocalhostFqdn(this IHelpers Helpers)
+        {
+            var ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+            return 
+                String.Format("{0}.{1}", ipProperties.HostName, ipProperties.DomainName);
         }
     }
 }

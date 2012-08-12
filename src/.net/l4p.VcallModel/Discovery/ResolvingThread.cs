@@ -53,7 +53,11 @@ namespace l4p.VcallModel.Discovery
 
             _todos = new BlockingCollection<Action>();
             _isStoppedEvent = new ManualResetEvent(false);
-            _thr = new Thread(discovery_update_main);
+
+            _thr = new Thread(discovery_update_main)
+                       {
+                           Name = "l4p.VcallModel.ResolvingThread"
+                       };
 
             _stopFlagIsOn = false;
             _groovyTimer = new Stopwatch();

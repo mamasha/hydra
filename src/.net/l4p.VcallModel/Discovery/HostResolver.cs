@@ -83,22 +83,16 @@ namespace l4p.VcallModel.Discovery
                 () => _engine.Publish(publisher));
         }
 
-        private void unpublish(Publisher publisher)
-        {
-            _self.thread.PostAction(
-                () => _engine.UnPublish(publisher));
-        }
-
         private void subscribe(Subscriber subscriber)
         {
             _self.thread.PostAction(
                 () => _engine.Subscribe(subscriber));
         }
 
-        private void unsubscibe(Subscriber subscriber)
+        private void cancel(string tag)
         {
             _self.thread.PostAction(
-                () => _engine.UnSubscribe(subscriber));
+                () => _engine.Cancel(tag));
         }
 
         #endregion
@@ -121,13 +115,11 @@ namespace l4p.VcallModel.Discovery
             _log.Info("Host resolving service is stopped");
         }
 
-        IRevertable IHostResolver.Publish(string callbackUri, string role, string tag)
+        void IHostResolver.Publish(string callbackUri, string role, string tag)
         {
             var uri = Helpers.TryCatch(_log,
                 () => new Uri(callbackUri),
                 ex => Helpers.ThrowNew<HostResolverException>(ex, _log, "Failed to parse callbackUri '{0}'", callbackUri));
-
-            var janitor = new Janitor();
 
             var publisher = new Publisher
                                 {
@@ -137,17 +129,10 @@ namespace l4p.VcallModel.Discovery
                                 };
 
             publish(publisher);
-
-            janitor.Add(
-                () => unpublish(publisher));
-
-            return janitor;
         }
 
-        IRevertable IHostResolver.Subscribe(PublishNotification onPublish, string tag)
+        void IHostResolver.Subscribe(PublishNotification onPublish, string tag)
         {
-            var janitor = new Janitor();
-
             var subscriber = new Subscriber
                                  {
                                      OnPublish = onPublish,
@@ -155,11 +140,11 @@ namespace l4p.VcallModel.Discovery
                                  };
 
             subscribe(subscriber);
+        }
 
-            janitor.Add(
-                () => unsubscibe(subscriber));
-
-            return janitor;
+        void IHostResolver.Cancel(string tag)
+        {
+            cancel(tag);
         }
 
         DebugCounters IHostResolver.Counters

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using l4p.VcallModel;
 
@@ -24,18 +22,18 @@ namespace l4p.VcallTests.StubsHosting
                 new ArgumentException(errMsg);
         }
 
-        static void parse_appconfig(VcallConfiguration config)
+        static void parse_appconfig(VcallConfiguration vconfig)
         {
-            config.ResolvingKey = ConfigurationManager.AppSettings["ResolvingKey"];
+            vconfig.ResolvingKey = ConfigurationManager.AppSettings["ResolvingKey"];
 
             string port = ConfigurationManager.AppSettings["port"];
             if (port != null)
             {
-                config.Port = Int32.Parse(port);
+                vconfig.Port = Int32.Parse(port);
             }
         }
 
-        static void parse_command_line(string[] args, VcallConfiguration config)
+        static void parse_command_line(string[] args, VcallConfiguration vconfig)
         {
             int argc = args.Length;
 
@@ -61,7 +59,7 @@ namespace l4p.VcallTests.StubsHosting
 
                     try
                     {
-                        config.Port = Int32.Parse(prm);
+                        vconfig.Port = Int32.Parse(prm);
                     }
                     catch (FormatException)
                     {
@@ -90,29 +88,33 @@ namespace l4p.VcallTests.StubsHosting
             {
                 string resolvingKey = unnamed[0];
                 Console.WriteLine("Using resolving key '{0}'", resolvingKey);
-                config.ResolvingKey = resolvingKey;
+                vconfig.ResolvingKey = resolvingKey;
             }
         }
 
         static void main_impl(string[] args)
         {
-            var config = new VcallConfiguration();
+            var vconfig = new VcallConfiguration();
 
             try
             {
-                parse_appconfig(config);
+                parse_appconfig(vconfig);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("failed to parse application configuration: {0}", ex.Message);
             }
 
-            parse_command_line(args, config);
+            parse_command_line(args, vconfig);
 
-            DefaultHosting.HostStubs();
+            Vcall.StartServices(vconfig);
+
+            DefaultHosting.StartSingleEmptyHosting();
+
+            Console.WriteLine("Resolving key is '{0}'", Vcall.Config.ResolvingKey);
 
             Console.WriteLine();
-            Console.WriteLine("Hosting is running (discovery is turned on)");
+            Console.WriteLine("Hosting is running (discovery is on)");
             Console.WriteLine("press Ctrl-C to stop");
             Console.WriteLine();
 
@@ -127,6 +129,8 @@ namespace l4p.VcallTests.StubsHosting
                     break;
                 }
             }
+
+            Vcall.StopServices();
         }
 
         static void Main(string[] args)
@@ -136,11 +140,7 @@ namespace l4p.VcallTests.StubsHosting
 
             try
             {
-                Vcall.StartServices();
-
                 main_impl(args);
-
-                Vcall.StopServices();
             }
             catch (Exception ex)
             {

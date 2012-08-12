@@ -16,41 +16,61 @@ namespace l4p.VcallModel.Core
     [DataContract]
     public class DebugCounters
     {
-        [DataMember] public int HelloMsgsSent { get; set; }
-        [DataMember] public int HelloMsgsRecieved { get; set; }
-        [DataMember] public int HelloMsgsFiltered { get; set; }
-        [DataMember] public int MyHelloMsgsReceived { get; set; }
-        [DataMember] public int OtherHelloMsgsReceived { get; set; }
-        [DataMember] public int HelloNotificationsProduced { get; set; }
-        [DataMember] public int ByeNotificationsProduced { get; set; }
+        [DataMember] public int Discovery_Event_ByeNotificationsProduced { get; set; }
+        [DataMember] public int Discovery_Event_HelloMsgsFiltered { get; set; }
+        [DataMember] public int Discovery_Event_HelloMsgsRecieved { get; set; }
+        [DataMember] public int Discovery_Event_HelloMsgsSent { get; set; }
+        [DataMember] public int Discovery_Event_HelloNotificationsProduced { get; set; }
+        [DataMember] public int Discovery_Event_HelloMsgIsKeepAlive { get; set; }
+        [DataMember] public int Discovery_Event_MyHelloMsgsReceived { get; set; }
+        [DataMember] public int Discovery_Event_OtherHelloMsgsReceived { get; set; }
 
-        [DataMember] public int HostingsOpened { get; set; }
-        [DataMember] public int HostingsClosed { get; set; }
-        [DataMember] public int TargetsOpened { get; set; }
-        [DataMember] public int TargetsClosed { get; set; }
+        [DataMember] public int Discovery_State_ActivePublishers { get; set; }
+        [DataMember] public int Discovery_State_ActiveSubscribers { get; set; }
+        [DataMember] public int Discovery_State_AliveRemotePeers { get; set; }
 
-        [DataMember] public int ActivePublishers { get; set; }
-        [DataMember] public int ActiveSubscribers { get; set; }
-        [DataMember] public int AliveRemotePeers { get; set; }
+        [DataMember] public int Vcall_Event_NewHosting { get; set; }
+        [DataMember] public int Vcall_Event_CloseHosting { get; set; }
+        [DataMember] public int Vcall_Event_NewTargets { get; set; }
+        [DataMember] public int Vcall_Event_CloseTargets { get; set; }
 
-        [DataMember] public int Targets_AliveHosts { get; set; }
-        [DataMember] public int Targets_DeadHosts { get; set; }
-        [DataMember] public int Targets_SubscribeTargets { get; set; }
+        [DataMember] public int Vcall_State_DurableOperations { get; set; }
 
-        [DataMember] public int Hosting_SubscribedTargets { get; set; }
-        [DataMember] public int Hosting_ConnectedTargets { get; set; }
+        [DataMember] public int Targets_Event_HostIsAlive { get; set; }
+        [DataMember] public int Targets_Event_HostIsDead { get; set; }
+        [DataMember] public int Targets_Event_SubscribeHosing { get; set; }
+        [DataMember] public int Targets_Event_TargetsCanceled { get; set; }
+        [DataMember] public int Targets_Event_AlreadyHereHosting { get; set; }
+        [DataMember] public int Targets_Event_SubscribeSelfToHosting { get; set; }
+
+        [DataMember] public int Hosting_Event_AliveHosts { get; set; }
+        [DataMember] public int Hosting_Event_DeadHosts { get; set; }
+        [DataMember] public int Hosting_Event_SubscribeTargets { get; set; }
+        [DataMember] public int Hosting_Event_AlreadyHereTargets { get; set; }
+        [DataMember] public int Hosting_Event_SubscribeSelfToTargets { get; set; }
+
+        [DataMember] public int Targets_Error_SubscribeToHosting { get; set; }
+
+        [DataMember] public int Hosting_Error_SubscribeSelfToTargets { get; set; }
+
+        public static DebugCounters AccumulateAll(params DebugCounters[] all)
+        {
+            var sum = new DebugCounters();
+            Array.ForEach(all, counters => sum.Accumulate(counters));
+            return sum;
+        }
     }
 
     public static class DebugCountersFormatter
     {
-        private static readonly PropertyInfo[] _counterFields = typeof(DebugCounters).GetProperties();
+        private static readonly FieldInfo[] _counterFields = typeof(DebugCounters).GetFields();
 
         public static void Format(this DebugCounters counters, StringBuilder sb)
         {
             foreach (var field in _counterFields)
             {
                 string name = field.Name;
-                int value = (int) field.GetValue(counters, null);
+                int value = (int) field.GetValue(counters);
 
                 sb
                     .StartWithNewLine()
@@ -74,10 +94,10 @@ namespace l4p.VcallModel.Core
         {
             foreach (var field in _counterFields)
             {
-                int lhs = (int) field.GetValue(lhsCounters, null);
-                int rhs = (int) field.GetValue(rhsCounters, null);
+                int lhs = (int) field.GetValue(lhsCounters);
+                int rhs = (int) field.GetValue(rhsCounters);
 
-                field.SetValue(lhsCounters, lhs + rhs, null);
+                field.SetValue(lhsCounters, lhs + rhs);
             }
         }
     }

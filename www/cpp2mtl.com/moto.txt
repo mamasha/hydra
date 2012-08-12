@@ -1,18 +1,18 @@
 ====== Hydra's moto ======
 
 The major, huge, immensible difference of Vcall approach is its orientation on a single function.
-That puts the developemnt focus on a fast prototyping. Without any other programing concerns.
+That puts the developemnt focus on a fast prototyping. Without other programing concerns.
 
-Let's look at any algorithm developer. He is a smart, bright mathematical person.
-His primary concern is developing a super-sophisticated algorithm
+Let's look at typical algorithm developer. He is a smart mathematician.
+His primary goal is developing a super-sophisticated algorithm
 
 <code>
 function [a] = Algorithm(x, y, s, xx, yyy, config)
 ...
 </code>
 
-This is the reality of a math development.
-Vcall respects this reality. It especially supports that single particular function.
+This is the reality of a math development world.
+Vcall respects this reality by supporting that single particular function.
 
 <code csharp>
 void main(...)

@@ -13,7 +13,7 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
-    class HostingPeerException : Exception
+    class HostingPeerException : VcallModelException
     {
         public HostingPeerException() { }
         public HostingPeerException(string message) : base(message) { }

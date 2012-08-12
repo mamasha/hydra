@@ -46,8 +46,12 @@
   <ItemGroup>
     <Compile Include="Core\CommNode.cs" />
     <Compile Include="Core\DebugCounters.cs" />
+    <Compile Include="Core\DurableOperation.cs" />
+    <Compile Include="Core\DurableQueue.cs" />
     <Compile Include="Core\IRevertable.cs" />
     <Compile Include="Core\Janitor.cs" />
+    <Compile Include="Core\ActiveThread.cs" />
+    <Compile Include="Utils\FillPropertiesOf.cs" />
     <Compile Include="Discovery\Engine.cs" />
     <Compile Include="Discovery\IHostResolver.cs" />
     <Compile Include="Discovery\Repository.cs" />
@@ -59,7 +63,6 @@
     <Compile Include="Utils\TcpHelpers.cs" />
     <Compile Include="Hosting\HostingPeer.cs" />
     <Compile Include="Discovery\HostResolver.cs" />
-    <Compile Include="Hosting\HostringThread.cs" />
     <Compile Include="Target\ITargetsPeer.cs" />
     <Compile Include="Target\Repository.cs" />
     <Compile Include="Target\TargetsPeer.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="Vcall.cs" />
     <Compile Include="Core\VcallSubsystem.cs" />
     <Compile Include="VcallConfiguration.cs" />
+    <Compile Include="VcallModelException.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

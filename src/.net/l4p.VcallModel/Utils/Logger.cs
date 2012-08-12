@@ -14,6 +14,8 @@ namespace l4p.VcallModel.Utils
 {
     public interface ILogger
     {
+        bool TraceIsOff { get; }
+
         void Error(string format, params object[] args);
         void Error(Exception ex, string format, params object[] args);
         void Warn(string format, params object[] args);
@@ -98,6 +100,11 @@ namespace l4p.VcallModel.Utils
         #endregion
 
         #region ILogger
+
+        public bool TraceIsOff
+        {
+            get { return false; }
+        }
 
         void ILogger.Error(string format, params object[] args)
         {

@@ -23,12 +23,13 @@ namespace l4p.VcallModel.Target
         private static readonly ILogger _log = Logger.New<TargetsPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private readonly Object _mutex;
         private readonly TargetConfiguration _config;
         private readonly IVcallSubsystem _core;
         private readonly IRepository _repo;
 
         private readonly IWcfTarget _wcf;
+        private readonly IActiveThread _thr;
+
         private string _listeningUri;
 
         #endregion
@@ -37,11 +38,11 @@ namespace l4p.VcallModel.Target
 
         public TargetsPeer(TargetConfiguration config, VcallSubsystem core)
         {
-            _mutex = new Object();
             _config = config;
             _core = core;
             _repo = Repository.New();
             _wcf = new WcfTarget(this);
+            _thr = ActiveThread.New(String.Format("targets.{0}", _tag));
         }
 
         #endregion
@@ -54,66 +55,75 @@ namespace l4p.VcallModel.Target
             _log.Trace("targets.{0}: {1}", _tag, msg);
         }
 
-        private void handle_alive_hosting(string callbackUri)
+        private void try_catch(Action action, Action onError, string errFmt, params object[] args)
         {
-            _counters.Targets_AliveHosts++;
-
-            var hosting = Helpers.TryCatch(_log,
-                () => HostingPeerProxy.New(callbackUri),
-                ex => Helpers.ThrowNew<TargetsPeerException>(ex, _log, "targets.{0}: Failed to create host at '{1}'", _tag, callbackUri));
-
-            try
-            {
-                var myInfo = new TargetsInfo
-                {
-                    Tag = _tag,
-                    ListeningUri = _listeningUri,
-                    NameSpace = _config.NameSpace,
-                    HostName = "TBD"
-                };
-
-                hosting.SubscribeTargets(myInfo);
-                _counters.Targets_SubscribeTargets++;
-            }
+            try { action(); }
             catch (Exception ex)
             {
-                if (ex.IsNotConsequenceOf<EndpointNotFoundException>())
-                {
-                    throw 
-                        Helpers.MakeNew<TargetsPeerException>(ex, _log, "targets.{0}: Failed to register self at host '{1}'", _tag, callbackUri);
-                }
-
-                trace("new host at '{1}' is not responding; skipped; {0}", callbackUri, ex.GetDetailedMessage());
-
-                return;
+                onError();
+                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
             }
+        }
 
-            trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.HostingsCount);
+        private R try_catch<R>(Func<R> func, Action onError, string errFmt, params object[] args)
+        {
+            try { return func(); }
+            catch (Exception ex)
+            {
+                onError();
+                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+            }
+        }
+
+        private void subsribe_self_to_hosting(string callbackUri, TargetsInfo myInfo)
+        {
+            var hosting = try_catch(
+                () => HostingPeerProxy.New(callbackUri), 
+                () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to create proxy at '{1}'", _tag, callbackUri);
+
+            try_catch(
+                () => hosting.SubscribeTargets(myInfo),
+                () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to register self at host '{1}'", _tag, callbackUri);
+
+            _counters.Targets_Event_SubscribeSelfToHosting++;
+            trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.AliveCount);
+        }
+
+        private void handle_alive_hosting(string callbackUri)
+        {
+            var myInfo = new TargetsInfo
+            {
+                Tag = _tag,
+                ListeningUri = _listeningUri,
+                NameSpace = _config.NameSpace,
+                HostName = Helpers.GetLocalhostFqdn()
+            };
+
+            _thr.DoOnce(_subscribe_RetryTimeout, callbackUri,
+                () => subsribe_self_to_hosting(callbackUri, myInfo), "subscribe targets.{0} to {1}", _tag, callbackUri);
         }
 
         private void handle_dead_hosting(string callbackUri)
         {
-            lock(_mutex)
-            {
-//                _repo.HostIdDead(callbackUri);
-            }
+            _thr.Cancel(callbackUri);
+            _repo.CleanUp(callbackUri);
 
-            _counters.Targets_DeadHosts++;
-//x            trace("disconnected from host '{0}' (hosts={1})", callbackUri, _repo.HostingsCount);
+            trace("host at '{0}' is dead; aliveHosts={1})", callbackUri, _repo.AliveCount);
         }
 
-        private void register_hosting(HostingInfo info)
+        private void subscribe_hosting(HostingInfo info)
         {
-            throw new NotImplementedException();
+            trace("Got a new hosting.{0} at '{1}'", info.Tag, info.CallbackUri);
 
-            var hosting = Helpers.TryCatch(_log,
-               () => HostingPeerProxy.New(info.CallbackUri),
-               ex => Helpers.ThrowNew<TargetsPeerException>(ex, _log, "targets.{0}: Failed to create host at '{1}'", _tag, info.CallbackUri));
-
-            lock (_mutex)
+            if (_repo.HasHosting(info))
             {
-                _repo.AddHosting(info);
+                trace("hosting.{0} at {1} is already registered", info.Tag, info.CallbackUri);
+                _counters.Targets_Event_AlreadyHereHosting++;
+                return;
             }
+
+            _repo.AddHosting(info);
+            _counters.Targets_Event_SubscribeHosing++;
         }
 
         private void cancel_hosting(string hostingUri)
@@ -134,6 +144,8 @@ namespace l4p.VcallModel.Target
                 () => _wcf.Start(uri, timeout),
                 ex => Helpers.ThrowNew<HostingPeerException>(ex, _log, "Failed to start targets.{0} at '{1}'", _tag, uri));
 
+            _thr.Start();
+
             trace("target is started");
         }
 
@@ -142,15 +154,31 @@ namespace l4p.VcallModel.Target
             get { return _tag; }
         }
 
-        // [discovery thread]
         public void OnHostingDiscovery(string callbackUri, string role, bool alive)
+            // discovery thread
         {
-            throw new NotImplementedException();
+            if (role != HostingRole)
+                return;
 
             if (alive)
-                handle_alive_hosting(callbackUri);
+            {
+                _thr.PostAction(
+                    () => handle_alive_hosting(callbackUri));
+
+                _counters.Targets_Event_HostIsAlive++;
+            }
             else
-                handle_dead_hosting(callbackUri);
+            {
+                _thr.PostAction(
+                    () => handle_dead_hosting(callbackUri));
+
+                _counters.Targets_Event_HostIsDead++;
+            }
+        }
+
+        public string ListeningUri
+        {
+            get { return _listeningUri; }
         }
 
         #endregion
@@ -161,44 +189,30 @@ namespace l4p.VcallModel.Target
         {
             trace("target is stopped");
 
-            // notify all targets
+            // notify all hostings
 
-            // close all targets
+            _wcf.Stop(timeout);
+            _thr.Stop();
 
-            throw
-                Helpers.NewNotImplementedException();
+            trace("targets is stopped");
         }
 
         #endregion
 
         #region ITargetsPeer
 
-        void ITargetsPeer.RegisterHosting(HostingInfo info)
+        void ITargetsPeer.SubscribeHosting(HostingInfo info)
+            // one way message; arbitrary WCF thread
         {
-            // one way message
-
-            try
-            {
-                register_hosting(info);
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, "targets.{0}: Failed to register hosting at '{1}'", _tag, info.CallbackUri);
-            }
+            _thr.PostAction(
+                () => subscribe_hosting(info), "Sibscribing hosting.{0} peer at '{1}'", info.Tag, info.CallbackUri);
         }
 
         void ITargetsPeer.CancelHosting(string hostingTag)
+            // one way message; arbitrary WCF thread
         {
-            // one way message
-
-            try
-            {
-                cancel_hosting(hostingTag);
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, "targets.{0}: Failed to cancel hosting.{1}", _tag, hostingTag);
-            }
+            _thr.PostAction(
+                () => cancel_hosting(hostingTag), "Canceling hosting.{0}", hostingTag);
         }
 
         #endregion
@@ -234,7 +248,7 @@ namespace l4p.VcallModel.Target
 
         void IVtarget.Close()
         {
-            _core.CloseTarget(this);
+            _core.CloseTargets(this);
         }
 
         #endregion

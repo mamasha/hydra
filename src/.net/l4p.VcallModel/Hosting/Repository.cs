@@ -17,8 +17,12 @@ namespace l4p.VcallModel.Hosting
     {
         void AddTargets(TargetsInfo info);
         void RemoveTargets(string tag);
+        bool HasTargets(TargetsInfo info);
+        int TargetsCount { get; }
 
         ITargetsPeer GetTargets(string tag);
+
+        void CleanUp(string id);
     }
 
     class Repository : IRepository
@@ -54,7 +58,8 @@ namespace l4p.VcallModel.Hosting
 
         void IRepository.AddTargets(TargetsInfo info)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
 
             var targets = _targets;
 
@@ -84,6 +89,21 @@ namespace l4p.VcallModel.Hosting
             _targets = newTargets;
         }
 
+        bool IRepository.HasTargets(TargetsInfo info)
+        {
+            throw
+                Helpers.NewNotImplementedException();
+        }
+
+        int IRepository.TargetsCount
+        {
+            get
+            {
+                throw
+                    Helpers.NewNotImplementedException();
+            }
+        }
+
         ITargetsPeer IRepository.GetTargets(string tag)
         {
             var targets = _targets;
@@ -97,6 +117,12 @@ namespace l4p.VcallModel.Hosting
             }
 
             return target;
+        }
+
+        void IRepository.CleanUp(string id)
+        {
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         #endregion

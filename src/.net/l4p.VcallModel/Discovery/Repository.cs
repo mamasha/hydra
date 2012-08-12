@@ -26,7 +26,7 @@ namespace l4p.VcallModel.Discovery
         public string Tag { get; set; }
     }
 
-    struct RemotePeer
+    class RemotePeer
     {
         public string CallbackUri { get; set; }
         public string Role { get; set; }
@@ -38,13 +38,16 @@ namespace l4p.VcallModel.Discovery
         void Add(Publisher publisher);
         void Remove(Publisher publisher);
         Publisher[] GetPublishers();
+        Publisher[] GetPublishers(string tag);
 
         void Add(Subscriber subscriber);
         void Remove(Subscriber subscriber);
         Subscriber[] GetSubscribers();
+        Subscriber[] GetSubscribers(string tag);
 
         void AddPeer(RemotePeer peer);
         bool HasPeer(string callbackUri);
+        void KeepAlive(string callbackUri, DateTime lastSeen);
         RemotePeer[] GetPeers();
         RemotePeer[] GetDeadPeers(DateTime lastSeen);
         void RemovePeers(RemotePeer[] peers);
@@ -56,7 +59,8 @@ namespace l4p.VcallModel.Discovery
     {
         #region members
 
-        private static readonly IHelpers Helpers = Helpers;
+        private static readonly ILogger _log = Logger.New<Repository>();
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly List<Publisher> _publishers;
         private readonly List<Subscriber> _subscribers;
@@ -83,7 +87,7 @@ namespace l4p.VcallModel.Discovery
         void IRepository.Add(Publisher publisher)
         {
             _publishers.Add(publisher);
-            _counters.ActivePublishers++;
+            _counters.Discovery_State_ActivePublishers++;
         }
 
         void IRepository.Remove(Publisher publisher)
@@ -91,7 +95,7 @@ namespace l4p.VcallModel.Discovery
             bool wasThere = _publishers.Remove(publisher);
 
             if (wasThere)
-                _counters.ActivePublishers--;
+                _counters.Discovery_State_ActivePublishers--;
         }
 
         Publisher[] IRepository.GetPublishers()
@@ -100,10 +104,21 @@ namespace l4p.VcallModel.Discovery
                 _publishers.ToArray();
         }
 
+        Publisher[] IRepository.GetPublishers(string tag)
+        {
+            var publishers =
+                from publisher in _publishers
+                where publisher.Tag == tag
+                select publisher;
+
+            return
+                publishers.ToArray();
+        }
+
         void IRepository.Add(Subscriber subscriber)
         {
             _subscribers.Add(subscriber);
-            _counters.ActiveSubscribers++;
+            _counters.Discovery_State_ActiveSubscribers++;
         }
 
         void IRepository.Remove(Subscriber subscriber)
@@ -111,7 +126,7 @@ namespace l4p.VcallModel.Discovery
             bool wasThere = _subscribers.Remove(subscriber);
 
             if (wasThere)
-                _counters.ActiveSubscribers--;
+                _counters.Discovery_State_ActiveSubscribers--;
         }
 
         Subscriber[] IRepository.GetSubscribers()
@@ -120,16 +135,37 @@ namespace l4p.VcallModel.Discovery
                 _subscribers.ToArray();
         }
 
+        Subscriber[] IRepository.GetSubscribers(string tag)
+        {
+            var subsribers =
+                from subscriber in _subscribers
+                where subscriber.Tag == tag
+                select subscriber;
+
+            return
+                subsribers.ToArray();
+        }
+
         void IRepository.AddPeer(RemotePeer peer)
         {
             _peers[peer.CallbackUri] = peer;
-            _counters.AliveRemotePeers++;
+            _counters.Discovery_State_AliveRemotePeers++;
         }
 
         bool IRepository.HasPeer(string callbackUri)
         {
             return
                 _peers.ContainsKey(callbackUri);
+        }
+
+        void IRepository.KeepAlive(string callbackUri, DateTime lastSeen)
+        {
+            RemotePeer peer;
+
+            _peers.TryGetValue(callbackUri, out peer);
+            Helpers.Assert(peer != null, _log);
+
+            peer.LastSeen = lastSeen;
         }
 
         RemotePeer[] IRepository.GetPeers()
@@ -156,7 +192,7 @@ namespace l4p.VcallModel.Discovery
                 bool wasThere = _peers.Remove(peer.CallbackUri);
 
                 if (wasThere)
-                    _counters.AliveRemotePeers--;
+                    _counters.Discovery_State_AliveRemotePeers--;
             }
         }
 
