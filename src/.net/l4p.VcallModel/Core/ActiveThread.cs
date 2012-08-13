@@ -7,98 +7,11 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
-    interface IActionQueue
-    {
-        void Push(Action action);
-        Action Pop(int timeout);
-    }
-
-    class ActionQueue : IActionQueue
-    {
-        #region members
-
-        private Object _mutex;
-        private Queue<Action> _que;
-
-        #endregion
-
-        #region construction
-
-        public static IActionQueue New()
-        {
-            return
-                new ActionQueue();
-        }
-
-        private ActionQueue()
-        {
-            _mutex = new Object();
-            _que = new Queue<Action>();
-        }
-
-        #endregion
-
-        #region private
-
-        Action dequeue()
-        {
-            return
-                _que.Count > 0 ? _que.Dequeue() : null;
-        }
-
-        int enqueue(Action action)
-        {
-            _que.Enqueue(action);
-            return
-                _que.Count;
-        }
-
-        #endregion
-
-        #region IActionQueue
-
-        void IActionQueue.Push(Action action)
-        {
-            lock (_mutex)
-            {
-                if (enqueue(action) == 1)
-                    Monitor.Pulse(_mutex);
-            }
-        }
-
-        Action IActionQueue.Pop(int timeout)
-        {
-            var tm = Stopwatch.StartNew();
-
-            lock (_mutex)
-            {
-                for (;;)
-                {
-                    var action = dequeue();
-
-                    if (action != null)
-                        return action;
-
-                    int timeLeft = timeout - (int) tm.ElapsedMilliseconds;
-
-                    if (timeLeft <= 0)
-                        return null;
-
-                    Monitor.Wait(_mutex, timeLeft);
-                }
-            }
-        }
-
-        #endregion
-    }
-
     public class ActiveThreadException : VcallModelException
     {
         public ActiveThreadException() { }
@@ -148,7 +61,7 @@ namespace l4p.VcallModel.Core
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly Thread _thr;
-        private readonly BlockingCollection<Action> _todos;
+        private readonly IActionQueue _que;
         private readonly IDurableQueue _durables;
         private readonly ManualResetEvent _isStartedEvent;
         private readonly ManualResetEvent _isStoppedEvent;
@@ -173,7 +86,7 @@ namespace l4p.VcallModel.Core
             _name = name;
             _config = config;
 
-            _todos = new BlockingCollection<Action>();
+            _que = ActionQueue.New();
             _durables = DurableQueue.New();
             _isStartedEvent = new ManualResetEvent(false);
             _isStoppedEvent = new ManualResetEvent(false);
@@ -247,7 +160,7 @@ namespace l4p.VcallModel.Core
             {
                 if (durable.IsFailed)
                 {
-                    _log.Error("'{0}' has permanently failed; (retries={1}); {2}", durable.Comments, durable.FailureCount, durable.LastErrMsg);
+                    _log.Error("'{0}' has permanently failed (retries={1}); {2}", durable.Comments, durable.FailureCount, durable.LastErrMsg);
                 }
 
                 _durables.Remove(durable);
@@ -279,9 +192,9 @@ namespace l4p.VcallModel.Core
                 int timeout = 
                     Math.Min(_durables.CalcNextTimeout(DateTime.Now), _config.MaxAwaitTimeout);
 
-                Action action;
+                var action = _que.Pop(timeout);
 
-                if (_todos.TryTake(out action, timeout))
+                if (action != null)
                 {
                     do_action_request(action);
                 }
@@ -326,7 +239,7 @@ namespace l4p.VcallModel.Core
 
         void IActiveThread.Stop()
         {
-            _todos.Add(() => _stopFlagIsOn = true);
+            _que.Push(() => _stopFlagIsOn = true);
 
             if (_isStoppedEvent.WaitOne(_config.StopTimeout) == false)
             {
@@ -336,12 +249,12 @@ namespace l4p.VcallModel.Core
 
         void IActiveThread.PostAction(Action action)
         {
-            _todos.Add(action);
+            _que.Push(action);
         }
 
         void IActiveThread.PostAction(Action action, string format, params object[] args)
         {
-            _todos.Add(
+            _que.Push(
                 () => action_with_comment(action, format, args));
         }
 
@@ -374,7 +287,11 @@ namespace l4p.VcallModel.Core
 
         DebugCounters IActiveThread.Counters
         {
-            get { return DebugCounters.AccumulateAll(_durables.Counters); }
+            get
+            {
+                return 
+                    DebugCounters.AccumulateAll(_durables.Counters);
+            }
         }
 
         #endregion

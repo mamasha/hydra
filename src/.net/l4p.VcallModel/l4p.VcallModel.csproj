@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\ActionQueue.cs" />
     <Compile Include="Core\CommNode.cs" />
     <Compile Include="Core\DebugCounters.cs" />
     <Compile Include="Core\DurableOperation.cs" />

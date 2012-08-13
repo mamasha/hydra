@@ -239,12 +239,12 @@ namespace l4p.VcallModel.Core
             if (error != null)
             {
                 had_failed_call(now, error);
-                _log.Warn("'{0}' has failed: {1}; (retries={2})", _args.Comments, error.Message, _consequentFailures);
+                _log.Warn("'{0}' has failed (retries={2}); {1}", _args.Comments, error.Message, _consequentFailures);
                 return false;
             }
 
             had_successful_call(now);
-            _log.Trace("'{0}' is done; (count={1})", _args.Comments, _successCount);
+            _log.Trace("'{0}' is done (count={1})", _args.Comments, _successCount);
 
             return true;
         }

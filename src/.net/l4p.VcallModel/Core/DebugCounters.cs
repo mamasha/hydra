@@ -63,14 +63,14 @@ namespace l4p.VcallModel.Core
 
     public static class DebugCountersFormatter
     {
-        private static readonly FieldInfo[] _counterFields = typeof(DebugCounters).GetFields();
+        private static readonly PropertyInfo[] _counterFields = typeof(DebugCounters).GetProperties();
 
         public static void Format(this DebugCounters counters, StringBuilder sb)
         {
             foreach (var field in _counterFields)
             {
                 string name = field.Name;
-                int value = (int) field.GetValue(counters);
+                int value = (int) field.GetValue(counters, null);
 
                 sb
                     .StartWithNewLine()
@@ -94,10 +94,10 @@ namespace l4p.VcallModel.Core
         {
             foreach (var field in _counterFields)
             {
-                int lhs = (int) field.GetValue(lhsCounters);
-                int rhs = (int) field.GetValue(rhsCounters);
+                int lhs = (int) field.GetValue(lhsCounters, null);
+                int rhs = (int) field.GetValue(rhsCounters, null);
 
-                field.SetValue(lhsCounters, lhs + rhs);
+                field.SetValue(lhsCounters, lhs + rhs, null);
             }
         }
     }

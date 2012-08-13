@@ -59,11 +59,12 @@ namespace l4p.VcallTests.Core
         public void Start_should_wait_until_thread_is_started()
         {
             var thr = ActiveThread.New("testing");
+
             thr.Start();
 
             thr.PostAction(() => _done = true);
+            Thread.Sleep(100);
 
-            Thread.Sleep(10);
             Assert.That(_done, Is.True);
 
             thr.Stop();
@@ -115,12 +116,6 @@ namespace l4p.VcallTests.Core
             Assert.That(_tm.ElapsedMilliseconds, Is.GreaterThan(400));
         }
 
-        [Test, Ignore("Is not supported yet")]
-        public void FailureAfterTwoRetries_should_be_skipped_after_two_retries()
-        {
-            Assert.Fail();
-        }
-
         [Test]
         public void FailureAfterTimeout_should_be_skipped_after_failure_timeout()
         {
@@ -130,22 +125,16 @@ namespace l4p.VcallTests.Core
             thr.PostAction(
                 () => thr.DoOnce(100, "cancelation_token", permanent_failure, "testing once"));
 
-            Thread.Sleep(100);
+            Thread.Sleep(200);
 
             var counters = thr.Counters;
             Assert.That(counters.Vcall_State_DurableOperations, Is.EqualTo(1));
 
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
             thr.Stop();
 
             counters = thr.Counters;
             Assert.That(counters.Vcall_State_DurableOperations, Is.EqualTo(0));
-        }
-
-        [Test, Ignore("Is not supported yet")]
-        public void ConcurrentDurablesTest_should_manage_two_durables()
-        {
-            Assert.Fail();
         }
     }
 }
