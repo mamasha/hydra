@@ -7,11 +7,98 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
+    interface IActionQueue
+    {
+        void Push(Action action);
+        Action Pop(int timeout);
+    }
+
+    class ActionQueue : IActionQueue
+    {
+        #region members
+
+        private Object _mutex;
+        private Queue<Action> _que;
+
+        #endregion
+
+        #region construction
+
+        public static IActionQueue New()
+        {
+            return
+                new ActionQueue();
+        }
+
+        private ActionQueue()
+        {
+            _mutex = new Object();
+            _que = new Queue<Action>();
+        }
+
+        #endregion
+
+        #region private
+
+        Action dequeue()
+        {
+            return
+                _que.Count > 0 ? _que.Dequeue() : null;
+        }
+
+        int enqueue(Action action)
+        {
+            _que.Enqueue(action);
+            return
+                _que.Count;
+        }
+
+        #endregion
+
+        #region IActionQueue
+
+        void IActionQueue.Push(Action action)
+        {
+            lock (_mutex)
+            {
+                if (enqueue(action) == 1)
+                    Monitor.Pulse(_mutex);
+            }
+        }
+
+        Action IActionQueue.Pop(int timeout)
+        {
+            var tm = Stopwatch.StartNew();
+
+            lock (_mutex)
+            {
+                for (;;)
+                {
+                    var action = dequeue();
+
+                    if (action != null)
+                        return action;
+
+                    int timeLeft = timeout - (int) tm.ElapsedMilliseconds;
+
+                    if (timeLeft <= 0)
+                        return null;
+
+                    Monitor.Wait(_mutex, timeLeft);
+                }
+            }
+        }
+
+        #endregion
+    }
+
     public class ActiveThreadException : VcallModelException
     {
         public ActiveThreadException() { }
@@ -39,9 +126,18 @@ namespace l4p.VcallModel.Core
 
         public class Config
         {
-            public readonly int MaxAwaitTimeout = 1000;
-            public readonly int FailureTimeout = 10000;
-            public readonly int StopTimeout = 10000;
+            public int MaxAwaitTimeout { get; set; }
+            public int FailureTimeout { get; set; }
+            public int StartTimeout { get; set; }
+            public int StopTimeout { get; set; }
+
+            public Config()
+            {
+                MaxAwaitTimeout = 1000;
+                FailureTimeout = 10000;
+                StartTimeout = 2000;
+                StopTimeout = 1000;
+            }
         }
 
         #endregion
@@ -54,6 +150,7 @@ namespace l4p.VcallModel.Core
         private readonly Thread _thr;
         private readonly BlockingCollection<Action> _todos;
         private readonly IDurableQueue _durables;
+        private readonly ManualResetEvent _isStartedEvent;
         private readonly ManualResetEvent _isStoppedEvent;
 
         private readonly string _name;
@@ -78,6 +175,7 @@ namespace l4p.VcallModel.Core
 
             _todos = new BlockingCollection<Action>();
             _durables = DurableQueue.New();
+            _isStartedEvent = new ManualResetEvent(false);
             _isStoppedEvent = new ManualResetEvent(false);
 
             _thr = new Thread(main)
@@ -158,6 +256,8 @@ namespace l4p.VcallModel.Core
 
         private void maintenance_loop()
         {
+            _isStartedEvent.Set();
+
             for (;;)
             {
                 DateTime now = DateTime.Now;
@@ -204,9 +304,9 @@ namespace l4p.VcallModel.Core
                 _log.Error(ex.GetDetailedStackTrace(), "{0}: Unexpected exception", _name);
             }
 
-            _isStoppedEvent.Set();
-
             info("update loop is done");
+
+            _isStoppedEvent.Set();
         }
 
         #endregion
@@ -216,6 +316,12 @@ namespace l4p.VcallModel.Core
         void IActiveThread.Start()
         {
             _thr.Start();
+
+            if (_isStartedEvent.WaitOne(_config.StartTimeout) == false)
+            {
+                throw
+                    Helpers.MakeNew<ActiveThreadException>(null, _log, "{0}: Failed to start the underlaying thread (timeout={1})", _name, _config.StartTimeout);
+            }
         }
 
         void IActiveThread.Stop()
@@ -224,7 +330,7 @@ namespace l4p.VcallModel.Core
 
             if (_isStoppedEvent.WaitOne(_config.StopTimeout) == false)
             {
-                _log.Info("{0}: Failed to stop targets thread", _name);
+                _log.Info("{0}: Failed to stop the underlaying thread (timeout={1})", _name, _config.StopTimeout);
             }
         }
 

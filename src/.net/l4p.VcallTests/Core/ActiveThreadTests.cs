@@ -14,7 +14,7 @@ using NUnit.Framework;
 namespace l4p.VcallTests.Core
 {
     [TestFixture]
-    class ActiveThreadWithDurablesTests
+    class ActiveThreadTests
     {
         private bool _done;
         private int _counter;
@@ -26,6 +26,47 @@ namespace l4p.VcallTests.Core
             _done = false;
             _counter = 0;
             _tm = Stopwatch.StartNew();
+        }
+
+        #region private
+
+        private void success_for_first_call()
+        {
+            _done = true; 
+            _tm.Stop();
+        }
+
+        private void failure_then_success()
+        {
+            if (_counter == 0)
+            {
+                _counter++;
+                throw new ApplicationException("First call is programmed to fail");
+            }
+
+            _done = true;
+            _tm.Stop();
+        }
+
+        private void permanent_failure()
+        {
+            throw new ApplicationException("Permanent failure");
+        }
+
+        #endregion
+
+        [Test]
+        public void Start_should_wait_until_thread_is_started()
+        {
+            var thr = ActiveThread.New("testing");
+            thr.Start();
+
+            thr.PostAction(() => _done = true);
+
+            Thread.Sleep(10);
+            Assert.That(_done, Is.True);
+
+            thr.Stop();
         }
 
         [Test]
@@ -40,37 +81,14 @@ namespace l4p.VcallTests.Core
             Assert.That(_done, Is.True);
         }
 
-        private void schedule_once(IActiveThread thr)
-        {
-            thr.DoOnce(500, "",
-                () => { _done = true; _tm.Stop(); } , "testing once");
-        }
-
-        private void failure_for_first_call()
-        {
-            if (_counter == 0)
-            {
-                _counter++;
-                throw new ApplicationException("First call is programmed to fail");
-            }
-
-            _done = true;
-            _tm.Stop();
-        }
-
-        private void schedule_once_with_retry(IActiveThread thr)
-        {
-            thr.DoOnce(500, "cancelation_token",
-                failure_for_first_call, "testing once");
-        }
-
         [Test]
         public void DoOnce_should_succeed()
         {
             var thr = ActiveThread.New("testing");
             thr.Start();
 
-            thr.PostAction(() => schedule_once(thr));
+            thr.PostAction(
+                () => thr.DoOnce(500, "", success_for_first_call, "testing once"));
 
             Thread.Sleep(300);
             thr.Stop();
@@ -86,7 +104,8 @@ namespace l4p.VcallTests.Core
             var thr = ActiveThread.New("testing");
             thr.Start();
 
-            thr.PostAction(() => schedule_once_with_retry(thr));
+            thr.PostAction(
+                () => thr.DoOnce(500, "cancelation_token", failure_then_success, "testing once"));
 
             Thread.Sleep(1000);
             thr.Stop();
@@ -97,15 +116,30 @@ namespace l4p.VcallTests.Core
         }
 
         [Test, Ignore("Is not supported yet")]
-        public void FailureAfterTwoRetries_should_throw_after_two_retries()
+        public void FailureAfterTwoRetries_should_be_skipped_after_two_retries()
         {
             Assert.Fail();
         }
 
-        [Test, Ignore("Is not supported yet")]
-        public void FailureAfterTimeout_should_throw_after_consequent_failure_timeout_is_expired()
+        [Test]
+        public void FailureAfterTimeout_should_be_skipped_after_failure_timeout()
         {
-            Assert.Fail();
+            var thr = ActiveThread.New("testing", new ActiveThread.Config { FailureTimeout = 500 });
+            thr.Start();
+
+            thr.PostAction(
+                () => thr.DoOnce(100, "cancelation_token", permanent_failure, "testing once"));
+
+            Thread.Sleep(100);
+
+            var counters = thr.Counters;
+            Assert.That(counters.Vcall_State_DurableOperations, Is.EqualTo(1));
+
+            Thread.Sleep(1000);
+            thr.Stop();
+
+            counters = thr.Counters;
+            Assert.That(counters.Vcall_State_DurableOperations, Is.EqualTo(0));
         }
 
         [Test, Ignore("Is not supported yet")]

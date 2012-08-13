@@ -44,7 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\ActiveThreadWithDurablesTests.cs" />
+    <Compile Include="Core\ActiveThreadTests.cs" />
     <Compile Include="Discovery\DiscoveryTests.cs" />
     <Compile Include="HostingStubsErrorsTests.cs" />
     <Compile Include="HostingStubsTests.cs" />
