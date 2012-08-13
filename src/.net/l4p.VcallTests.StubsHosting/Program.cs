@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading;
 using l4p.VcallModel;
+using l4p.VcallModel.Configuration;
 
 namespace l4p.VcallTests.StubsHosting
 {
@@ -24,9 +25,16 @@ namespace l4p.VcallTests.StubsHosting
 
         static void parse_appconfig(VcallConfiguration vconfig)
         {
-            vconfig.ResolvingKey = ConfigurationManager.AppSettings["ResolvingKey"];
-
+            string resolvingKey = ConfigurationManager.AppSettings["ResolvingKey"];
             string port = ConfigurationManager.AppSettings["port"];
+
+            if (String.IsNullOrEmpty(resolvingKey))
+            {
+                resolvingKey = "l4p.vcalltests";
+            }
+
+            vconfig.ResolvingKey = resolvingKey;
+
             if (port != null)
             {
                 vconfig.Port = Int32.Parse(port);

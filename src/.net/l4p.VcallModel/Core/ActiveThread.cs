@@ -39,6 +39,7 @@ namespace l4p.VcallModel.Core
 
         public class Config
         {
+            public string Name { get; set; }
             public int MaxAwaitTimeout { get; set; }
             public int FailureTimeout { get; set; }
             public int StartTimeout { get; set; }
@@ -46,8 +47,9 @@ namespace l4p.VcallModel.Core
 
             public Config()
             {
+                Name = "ActiveThread";
                 MaxAwaitTimeout = 1000;
-                FailureTimeout = 10000;
+                FailureTimeout = 60000;
                 StartTimeout = 2000;
                 StopTimeout = 1000;
             }
@@ -66,7 +68,6 @@ namespace l4p.VcallModel.Core
         private readonly ManualResetEvent _isStartedEvent;
         private readonly ManualResetEvent _isStoppedEvent;
 
-        private readonly string _name;
         private readonly Config _config;
 
         private bool _stopFlagIsOn;
@@ -75,15 +76,14 @@ namespace l4p.VcallModel.Core
 
         #region construction
 
-        public static IActiveThread New(string name, Config config = null)
+        public static IActiveThread New(Config config = null)
         {
             return
-                new ActiveThread(name, config ?? new Config());
+                new ActiveThread(config ?? new Config());
         }
 
-        private ActiveThread(string name, Config config)
+        private ActiveThread(Config config)
         {
-            _name = name;
             _config = config;
 
             _que = ActionQueue.New();
@@ -91,10 +91,7 @@ namespace l4p.VcallModel.Core
             _isStartedEvent = new ManualResetEvent(false);
             _isStoppedEvent = new ManualResetEvent(false);
 
-            _thr = new Thread(main)
-                       {
-                           Name = name
-                       };
+            _thr = new Thread(main) { Name = _config.Name };
 
             _stopFlagIsOn = false;
         }
@@ -106,7 +103,7 @@ namespace l4p.VcallModel.Core
         private void info(string format, params object[] args)
         {
             string msg = Helpers.SafeFormat(format, args);
-            _log.Info("{0}: {1}", _name, msg);
+            _log.Info("{0}: {1}", _config.Name, msg);
         }
 
         private void trace(string format, params object[] args)
@@ -115,7 +112,7 @@ namespace l4p.VcallModel.Core
                 return;
 
             string msg = Helpers.SafeFormat(format, args);
-            _log.Info("{0}: {1}", _name, msg);
+            _log.Info("{0}: {1}", _config.Name, msg);
         }
 
         private void assert_current_thread_is_mine()
@@ -214,7 +211,7 @@ namespace l4p.VcallModel.Core
             }
             catch (Exception ex)
             {
-                _log.Error(ex.GetDetailedStackTrace(), "{0}: Unexpected exception", _name);
+                _log.Error(ex.GetDetailedStackTrace(), "{0}: Unexpected exception", _config.Name);
             }
 
             info("update loop is done");
@@ -233,7 +230,7 @@ namespace l4p.VcallModel.Core
             if (_isStartedEvent.WaitOne(_config.StartTimeout) == false)
             {
                 throw
-                    Helpers.MakeNew<ActiveThreadException>(null, _log, "{0}: Failed to start the underlaying thread (timeout={1})", _name, _config.StartTimeout);
+                    Helpers.MakeNew<ActiveThreadException>(null, _log, "{0}: Failed to start the underlaying thread (timeout={1})", _config.Name, _config.StartTimeout);
             }
         }
 
@@ -243,7 +240,7 @@ namespace l4p.VcallModel.Core
 
             if (_isStoppedEvent.WaitOne(_config.StopTimeout) == false)
             {
-                _log.Info("{0}: Failed to stop the underlaying thread (timeout={1})", _name, _config.StopTimeout);
+                _log.Info("{0}: Failed to stop the underlaying thread (timeout={1})", _config.Name, _config.StopTimeout);
             }
         }
 

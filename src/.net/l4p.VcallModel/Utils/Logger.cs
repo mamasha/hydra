@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace l4p.VcallModel.Utils
 {
-    public interface ILogger
+    interface ILogger
     {
         bool TraceIsOff { get; }
 
@@ -24,7 +24,7 @@ namespace l4p.VcallModel.Utils
         void Trace(string format, params object[] args);
     }
 
-    public enum LogPriority
+    enum LogPriority
     {
         None = 0,
         Fatal = 1,
@@ -34,7 +34,7 @@ namespace l4p.VcallModel.Utils
         Trace = 5
     }
 
-    public class Logger : ILogger
+    class Logger : ILogger
     {
         #region members
 

@@ -40,7 +40,14 @@ namespace l4p.VcallModel.Hosting
             _core = core;
             _repo = Repository.New(this);
             _wcf = new WcfHosting(this);
-            _thr = ActiveThread.New(String.Format("hosting.{0}", _tag));
+
+            var thrConfig = new ActiveThread.Config
+            {
+                Name = String.Format("hosting.{0}", _tag),
+                FailureTimeout = core.Config.Timeouts.ActiveThread_FailureTimeout
+            };
+
+            _thr = ActiveThread.New(thrConfig);
         }
 
         #endregion

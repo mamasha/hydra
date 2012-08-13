@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace l4p.VcallModel
+namespace l4p.VcallModel.Configuration
 {
     public class VcallConfiguration
     {
@@ -12,6 +12,7 @@ namespace l4p.VcallModel
 
         public int AddressInUseRetries { get; set; }
         public Timeouts Timeouts { get; set; }
+        public Logging Logging { get; set; }
 
         public VcallConfiguration()
         {
@@ -20,6 +21,7 @@ namespace l4p.VcallModel
             CallbackUriPattern = "net.tcp://{0}:{1}/{2}/{3}/";
             AddressInUseRetries = 3;
             Timeouts = new Timeouts();
+            Logging = new Logging();
         }
 
         public VcallConfiguration Clone()
@@ -60,4 +62,26 @@ namespace l4p.VcallModel
         }
     }
 
+    public enum LoggingLevel
+    {
+        Off, Error, Info, Warn, Trace
+    }
+
+    public class Logging
+    {
+        public LoggingLevel Level { get; set; }
+        public string ToFile { get; set; }
+        public bool ToTrace { get; set; }
+        public bool ToConsole { get; set; }
+        public Action<string> ToMethod { get; set; }
+
+        public Logging()
+        {
+            Level = LoggingLevel.Trace;
+            ToFile = null;
+            ToTrace = true;
+            ToConsole = false;
+            ToMethod = null;
+        }
+    }
 }

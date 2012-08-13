@@ -42,7 +42,14 @@ namespace l4p.VcallModel.Target
             _core = core;
             _repo = Repository.New();
             _wcf = new WcfTarget(this);
-            _thr = ActiveThread.New(String.Format("targets.{0}", _tag));
+
+            var thrConfig = new ActiveThread.Config
+            {
+                Name = String.Format("targets.{0}", _tag),
+                FailureTimeout = core.Config.Timeouts.ActiveThread_FailureTimeout
+            };
+
+            _thr = ActiveThread.New(thrConfig);
         }
 
         #endregion
@@ -78,7 +85,7 @@ namespace l4p.VcallModel.Target
         private void subsribe_self_to_hosting(string callbackUri, TargetsInfo myInfo)
         {
             var hosting = try_catch(
-                () => HostingPeerProxy.New(callbackUri), 
+                () => HostingPeerProxy.New(callbackUri+"abra"), 
                 () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to create proxy at '{1}'", _tag, callbackUri);
 
             try_catch(

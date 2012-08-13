@@ -58,7 +58,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void Start_should_wait_until_thread_is_started()
         {
-            var thr = ActiveThread.New("testing");
+            var thr = ActiveThread.New();
 
             thr.Start();
 
@@ -73,7 +73,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void PostAction_should_succeed()
         {
-            var thr = ActiveThread.New("testing");
+            var thr = ActiveThread.New();
             thr.Start();
 
             thr.PostAction(() => _done = true);
@@ -85,7 +85,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void DoOnce_should_succeed()
         {
-            var thr = ActiveThread.New("testing");
+            var thr = ActiveThread.New();
             thr.Start();
 
             thr.PostAction(
@@ -102,7 +102,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void DoOnceWithRetry_should_succeed_after_retry()
         {
-            var thr = ActiveThread.New("testing");
+            var thr = ActiveThread.New();
             thr.Start();
 
             thr.PostAction(
@@ -119,7 +119,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void FailureAfterTimeout_should_be_skipped_after_failure_timeout()
         {
-            var thr = ActiveThread.New("testing", new ActiveThread.Config { FailureTimeout = 500 });
+            var thr = ActiveThread.New(new ActiveThread.Config { FailureTimeout = 500 });
             thr.Start();
 
             thr.PostAction(

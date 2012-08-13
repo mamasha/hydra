@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
+using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Discovery;
 using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Target;

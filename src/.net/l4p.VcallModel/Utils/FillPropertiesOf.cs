@@ -113,16 +113,25 @@ namespace l4p.VcallModel.Utils.Impl
 
         void IProperty.SetValue(object value)
         {
-            Type srcType = value.GetType();
-            Type dstType = _info.PropertyType;
-
             try
             {
                 _info.SetValue(_instance, value, null);
             }
             catch (Exception ex)
             {
-                string errMsg = String.Format("Failed to set value of '{0}' property; from='{1}' to='{2}'", _info.Name, srcType.Name, dstType.Name);
+                Type dstType = _info.PropertyType;
+                string errMsg;
+
+                if (value != null)
+                {
+                    Type srcType = value.GetType();
+                    errMsg = String.Format("Failed to set value of '{0}' property; from='{1}' to='{2}'", _info.Name, srcType.Name, dstType.Name);
+                }
+                else
+                {
+                    errMsg = String.Format("Failed to set null value to '{0}' property; to='{1}'", _info.Name, dstType.Name);
+                }
+
                 throw
                     new FillPropertiesOfException(errMsg, ex);
             }
