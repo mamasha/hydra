@@ -24,6 +24,10 @@ namespace l4p.VcallModel
         /// TCP port to connect to  </summary>
         public int? Port { get; set; }
 
+        public string TargetsRole { get; set; }
+        public string HostingRole { get; set; }
         public NonRegisteredCallPolicy NonRegisteredCall { get; set; }
+
+        public int? SubscribeToHosting_RetryTimeout { get; set; }
     }
 }

@@ -7,7 +7,7 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Discovery
 {
-    interface IEngine
+    interface IManager
     {
         void Publish(Publisher publisher);
         void Subscribe(Subscriber subscriber);
@@ -16,11 +16,9 @@ namespace l4p.VcallModel.Discovery
         void HandleHelloMessage(string callbackUri, string role, DateTime lastSeen);
         void SendHelloMessages();
         void GenerateByeNotifications(DateTime now);
-
-        DebugCounters Counters { get; }
     }
 
-    class Engine : IEngine
+    class Manager : IManager
     {
         #region members
 
@@ -35,10 +33,10 @@ namespace l4p.VcallModel.Discovery
 
         #region construction
 
-        public Engine(Self self)
+        public Manager(Self self)
         {
             _self = self;
-            _counters = new DebugCounters();
+            _counters = Context.Get<ICountersDb>().NewCounters();
         }
 
         #endregion
@@ -112,9 +110,9 @@ namespace l4p.VcallModel.Discovery
 
         #endregion
 
-        #region IEngine
+        #region IManager
 
-        void IEngine.Publish(Publisher publisher)
+        void IManager.Publish(Publisher publisher)
         {
             _self.repo.Add(publisher);
 
@@ -123,7 +121,7 @@ namespace l4p.VcallModel.Discovery
             trace("hosing.{0} ({1}) is published at '{2}'", publisher.Tag, publisher.Role, publisher.CallbackUri);
         }
 
-        void IEngine.Subscribe(Subscriber subscriber)
+        void IManager.Subscribe(Subscriber subscriber)
         {
             _self.repo.Add(subscriber);
 
@@ -132,13 +130,13 @@ namespace l4p.VcallModel.Discovery
             trace("targets.{0} is subscribed", subscriber.Tag);
         }
 
-        void IEngine.Cancel(string tag)
+        void IManager.Cancel(string tag)
         {
             cancel_publishers(tag);
             cancel_subscribers(tag);
         }
 
-        void IEngine.HandleHelloMessage(string callbackUri, string role, DateTime lastSeen)
+        void IManager.HandleHelloMessage(string callbackUri, string role, DateTime lastSeen)
         {
             if (_self.repo.HasPeer(callbackUri))
             {
@@ -167,7 +165,7 @@ namespace l4p.VcallModel.Discovery
             trace("{0} hello notifications are generated", subscribers.Length);
         }
 
-        void IEngine.SendHelloMessages()
+        void IManager.SendHelloMessages()
         {
             var publishers = _self.repo.GetPublishers();
 
@@ -182,7 +180,7 @@ namespace l4p.VcallModel.Discovery
             }
         }
 
-        void IEngine.GenerateByeNotifications(DateTime now)
+        void IManager.GenerateByeNotifications(DateTime now)
         {
             var lastSeen = now - TimeSpan.FromMilliseconds(_self.config.ByeMessageGap);
 
@@ -210,11 +208,6 @@ namespace l4p.VcallModel.Discovery
 
             _counters.Discovery_Event_ByeNotificationsProduced += notificationCount;
             trace("{0} bye notifications are generated", notificationCount);
-        }
-
-        DebugCounters IEngine.Counters
-        {
-            get { return _counters; }
         }
 
         #endregion

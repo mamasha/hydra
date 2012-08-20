@@ -41,7 +41,7 @@ namespace l4p.VcallModel.Hosting
         public WcfHosting(IHostingPeer peer)
         {
             Helpers.TryCatch(_log,
-                () => _host = new ContextualHost(peer),
+                () => _host = new Proxies.ContextualHost(peer),
                 ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
         }
 
@@ -71,31 +71,4 @@ namespace l4p.VcallModel.Hosting
 
         #endregion
     }
-
-    class ContextualHost : ServiceHost
-    {
-        private IHostingPeer _channel;
-
-        public ContextualHost(IHostingPeer channel)
-            : base(typeof(ContextualPeer))
-        {
-            _channel = channel;
-        }
-
-        class ContextualPeer : IHostingPeer
-        {
-            private static IHostingPeer Channel
-            {
-                get
-                {
-                    var context = (ContextualHost)OperationContext.Current.Host;
-                    return context._channel;
-                }
-            }
-
-            void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
-            void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
-        }
-    }
-
 }

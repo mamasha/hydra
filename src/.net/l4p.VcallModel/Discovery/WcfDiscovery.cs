@@ -22,8 +22,6 @@ namespace l4p.VcallModel.Discovery
         void Stop();
 
         void SendHelloMessage(EndpointDiscoveryMetadata edm);
-
-        DebugCounters Counters { get; }
     }
 
     class WcfDiscovery : IWcfDiscovery
@@ -34,7 +32,7 @@ namespace l4p.VcallModel.Discovery
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly Self _self;
-        private readonly IEngine _engine;
+        private readonly IManager _engine;
 
         private readonly Object _mutex;
         private readonly ServiceEndpoint _serviceEndpoint;
@@ -47,7 +45,7 @@ namespace l4p.VcallModel.Discovery
 
         #region construction
 
-        public WcfDiscovery(Self self, IEngine engine)
+        public WcfDiscovery(Self self, IManager engine)
         {
             _self = self;
             _engine = engine;
@@ -64,7 +62,7 @@ namespace l4p.VcallModel.Discovery
 
             _announcementCleint = new AnnouncementClient(new UdpAnnouncementEndpoint());
 
-            _counters = new DebugCounters();
+            _counters = Context.Get<ICountersDb>().NewCounters();
         }
 
         #endregion
@@ -154,11 +152,6 @@ namespace l4p.VcallModel.Discovery
         {
             _announcementCleint.AnnounceOnlineAsync(edm);
             _counters.Discovery_Event_HelloMsgsSent++;
-        }
-
-        DebugCounters IWcfDiscovery.Counters
-        {
-            get { return _counters; }
         }
 
         #endregion

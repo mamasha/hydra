@@ -6,12 +6,13 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
 
 namespace l4p.VcallModel.Utils
 {
-	static class MiscellaneousHelpers
+    static class MiscellaneousHelpers
 	{
         public static StringBuilder StartWithNewLine(this StringBuilder sb)
         {
@@ -46,6 +47,12 @@ namespace l4p.VcallModel.Utils
             var ipProperties = IPGlobalProperties.GetIPGlobalProperties();
             return 
                 String.Format("{0}.{1}", ipProperties.HostName, ipProperties.DomainName);
+        }
+
+        public static string RandomName8(this IHelpers Helpers)
+        {
+            return
+                Path.GetFileNameWithoutExtension(Path.GetRandomFileName());
         }
     }
 }

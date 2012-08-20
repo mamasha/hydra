@@ -19,8 +19,6 @@ namespace l4p.VcallModel.Discovery
         void Start();
         void Stop();
         void PostAction(Action action);
-
-        DebugCounters Counters { get; }
     }
 
     class ResolvingThread : IResolvingThread
@@ -35,7 +33,7 @@ namespace l4p.VcallModel.Discovery
         private readonly Thread _thr;
 
         private readonly int _helloMsgGap;
-        private readonly IEngine _engine;
+        private readonly IManager _engine;
 
         private readonly Stopwatch _groovyTimer;
         private bool _stopFlagIsOn;
@@ -46,7 +44,7 @@ namespace l4p.VcallModel.Discovery
 
         #region construction
 
-        public ResolvingThread(Self self, IEngine engine)
+        public ResolvingThread(Self self, IManager engine)
         {
             _helloMsgGap = self.config.HelloMessageGap;
             _engine = engine;
@@ -62,7 +60,7 @@ namespace l4p.VcallModel.Discovery
             _stopFlagIsOn = false;
             _groovyTimer = new Stopwatch();
 
-            _counters = new DebugCounters();
+            _counters = Context.Get<ICountersDb>().NewCounters();
         }
 
         #endregion
@@ -159,21 +157,11 @@ namespace l4p.VcallModel.Discovery
         void IResolvingThread.Stop()
         {
             _todos.Add(() => _stopFlagIsOn = true);
-
-            if (_isStoppedEvent.WaitOne(1000) == false)
-            {
-                _log.Info("Failed to stop announcement thread");
-            }
         }
 
         void IResolvingThread.PostAction(Action action)
         {
             _todos.Add(action);
-        }
-
-        DebugCounters IResolvingThread.Counters
-        {
-            get { return _counters; }
         }
 
         #endregion

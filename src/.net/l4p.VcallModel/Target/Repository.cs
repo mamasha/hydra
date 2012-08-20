@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Utils;
 
@@ -7,14 +9,15 @@ namespace l4p.VcallModel.Target
 {
     interface IRepository
     {
-        void CleanUp(string id);
+        int HostingCount { get; }
+        bool HasHosting(string tag);
 
         void AddHosting(HostingInfo info);
-        void RemoveHosting(string tag);
-        bool HasHosting(HostingInfo info);
-//        void HostIdDead(string callbackUri);
+        void RemoveHosting(HostingInfo info);
 
-        int AliveCount { get; }
+        HostingInfo FindHosting(string tag);
+        HostingInfo GetHosting(string tag);
+        HostingInfo[] GetHostings();
     }
 
     class Repository : IRepository
@@ -24,7 +27,8 @@ namespace l4p.VcallModel.Target
         private static readonly ILogger _log = Logger.New<TargetsPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private IDictionary<string, IHostingPeer> _hosts;
+        private readonly IDictionary<string, HostingInfo> _hostings;
+        private readonly DebugCounters _counters;
 
         #endregion
 
@@ -38,44 +42,77 @@ namespace l4p.VcallModel.Target
 
         private Repository()
         {
-            _hosts = new Dictionary<string, IHostingPeer>();
+            _hostings = new Dictionary<string, HostingInfo>();
+            _counters = Context.Get<ICountersDb>().NewCounters();
+        }
+
+        #endregion
+
+        #region private
+
+        private HostingInfo find_hosting(string tag)
+        {
+            var hostings =
+                from hosting in _hostings.Values
+                where hosting.Tag == tag || hosting.CallbackUri == tag
+                select hosting;
+
+            return
+                hostings.FirstOrDefault();
         }
 
         #endregion
 
         #region IRepository
 
-        void IRepository.CleanUp(string id)
+        int IRepository.HostingCount
         {
-            throw
-                Helpers.NewNotImplementedException();
+            get { return _hostings.Count; }
+        }
+
+        bool IRepository.HasHosting(string tag)
+        {
+            return
+                _hostings.ContainsKey(tag);
         }
 
         void IRepository.AddHosting(HostingInfo info)
         {
-            throw
-                Helpers.NewNotImplementedException();
+            _hostings[info.Tag] = info;
+            _counters.Targets_State_AliveHostings++;
         }
 
-        void IRepository.RemoveHosting(string tag)
+        void IRepository.RemoveHosting(HostingInfo info)
         {
-            throw
-                Helpers.NewNotImplementedException();
+            bool wasThere = _hostings.Remove(info.Tag);
+
+            if (wasThere)
+                _counters.Targets_State_AliveHostings--;
         }
 
-        bool IRepository.HasHosting(HostingInfo info)
+        HostingInfo IRepository.FindHosting(string tag)
         {
-            throw
-                Helpers.NewNotImplementedException();
+            return
+                find_hosting(tag);
         }
 
-        int IRepository.AliveCount
+        HostingInfo IRepository.GetHosting(string tag)
         {
-            get
+            var hosting = find_hosting(tag);
+
+            if (hosting == null)
             {
                 throw
-                    Helpers.NewNotImplementedException();
+                    Helpers.MakeNew<TargetsPeerException>(null, _log, "Can't find hosting.{0}", tag);
             }
+
+            return hosting;
+        }
+
+        HostingInfo[] IRepository.GetHostings()
+        {
+            return
+                _hostings.Values.ToArray();
         }
 
         #endregion

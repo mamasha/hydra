@@ -37,10 +37,5 @@ namespace l4p.VcallModel
         /// <param name="args">Arguments of a call</param>
         /// <returns>Function return value</returns>
         R Call<R>(string functionName, params object[] args);
-
-        /// <summary>
-        /// Close all underlaying services of this target instance </summary>
-        /// <remarks>Calling any method after Close() is called will lead to unpredictable results</remarks>
-        void Close();
     }
 }

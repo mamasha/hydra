@@ -23,6 +23,7 @@ namespace l4p.VcallModel.Core
     {
         void Start();
         void Stop();
+        void Stop(Action stopTail);
 
         void PostAction(Action action);
         void PostAction(Action action, string format, params object[] args);
@@ -70,6 +71,8 @@ namespace l4p.VcallModel.Core
 
         private readonly Config _config;
 
+        private readonly DebugCounters _counters;
+
         private bool _stopFlagIsOn;
 
         #endregion
@@ -93,6 +96,8 @@ namespace l4p.VcallModel.Core
 
             _thr = new Thread(main) { Name = _config.Name };
 
+            _counters = Context.Get<ICountersDb>().NewCounters();
+
             _stopFlagIsOn = false;
         }
 
@@ -112,7 +117,7 @@ namespace l4p.VcallModel.Core
                 return;
 
             string msg = Helpers.SafeFormat(format, args);
-            _log.Info("{0}: {1}", _config.Name, msg);
+            _log.Trace("{0}: {1}", _config.Name, msg);
         }
 
         private void assert_current_thread_is_mine()
@@ -157,7 +162,7 @@ namespace l4p.VcallModel.Core
             {
                 if (durable.IsFailed)
                 {
-                    _log.Error("'{0}' has permanently failed (retries={1}); {2}", durable.Comments, durable.FailureCount, durable.LastErrMsg);
+                    _log.Error(durable.LastError, "'{0}' has permanently failed (retries={1}); {2}", durable.Comments, durable.FailureCount, durable.LastErrorMsg);
                 }
 
                 _durables.Remove(durable);
@@ -237,11 +242,15 @@ namespace l4p.VcallModel.Core
         void IActiveThread.Stop()
         {
             _que.Push(() => _stopFlagIsOn = true);
+        }
 
-            if (_isStoppedEvent.WaitOne(_config.StopTimeout) == false)
-            {
-                _log.Info("{0}: Failed to stop the underlaying thread (timeout={1})", _config.Name, _config.StopTimeout);
-            }
+        void IActiveThread.Stop(Action stopTail)
+        {
+            _que.Push(() =>
+                          {
+                              _stopFlagIsOn = true;
+                              stopTail();
+                          });
         }
 
         void IActiveThread.PostAction(Action action)
@@ -284,11 +293,7 @@ namespace l4p.VcallModel.Core
 
         DebugCounters IActiveThread.Counters
         {
-            get
-            {
-                return 
-                    DebugCounters.AccumulateAll(_durables.Counters);
-            }
+            get { return _counters; }
         }
 
         #endregion

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "l4p.VcallTests.StubsHosting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "l4p.VcallTests", "l4p.VcallTests\l4p.VcallTests.csproj", "{51E508EB-3A4E-436F-9E29-D51CC44DC55C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "l4p.VcallTests.TestRunner", "l4p.VcallTests.TestRunner\l4p.VcallTests.TestRunner.csproj", "{D3E8B546-5EF3-40A6-B45C-338C88B11989}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{51E508EB-3A4E-436F-9E29-D51CC44DC55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51E508EB-3A4E-436F-9E29-D51CC44DC55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51E508EB-3A4E-436F-9E29-D51CC44DC55C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3E8B546-5EF3-40A6-B45C-338C88B11989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3E8B546-5EF3-40A6-B45C-338C88B11989}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3E8B546-5EF3-40A6-B45C-338C88B11989}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3E8B546-5EF3-40A6-B45C-338C88B11989}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

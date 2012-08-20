@@ -16,6 +16,21 @@ namespace l4p.VcallModel.Core
     [DataContract]
     public class DebugCounters
     {
+        [DataMember] public int Vcall_Event_NewHosting { get; set; }
+        [DataMember] public int Vcall_Event_NewTargets { get; set; }
+        [DataMember] public int Vcall_Event_CloseCommNode { get; set; }
+
+        [DataMember] public int Vcall_Error_AddressInUse { get; set; }
+        [DataMember] public int Vcall_Error_NewHostingFailed { get; set; }
+        [DataMember] public int Vcall_Error_NewTargetsFailed { get; set; }
+        [DataMember] public int Vcall_Error_CloseCommNode { get; set; }
+        [DataMember] public int Vcall_Error_InternalFailure { get; set; }
+
+        [DataMember] public int Vcall_State_DurableOperations { get; set; }
+        [DataMember] public int Vcall_State_ActiveNodes { get; set; }
+
+        //----------------------------------------------------------//
+
         [DataMember] public int Discovery_Event_ByeNotificationsProduced { get; set; }
         [DataMember] public int Discovery_Event_HelloMsgsFiltered { get; set; }
         [DataMember] public int Discovery_Event_HelloMsgsRecieved { get; set; }
@@ -29,35 +44,55 @@ namespace l4p.VcallModel.Core
         [DataMember] public int Discovery_State_ActiveSubscribers { get; set; }
         [DataMember] public int Discovery_State_AliveRemotePeers { get; set; }
 
-        [DataMember] public int Vcall_Event_NewHosting { get; set; }
-        [DataMember] public int Vcall_Event_CloseHosting { get; set; }
-        [DataMember] public int Vcall_Event_NewTargets { get; set; }
-        [DataMember] public int Vcall_Event_CloseTargets { get; set; }
+        //----------------------------------------------------------//
 
-        [DataMember] public int Vcall_State_DurableOperations { get; set; }
-
-        [DataMember] public int Targets_Event_HostIsAlive { get; set; }
-        [DataMember] public int Targets_Event_HostIsDead { get; set; }
-        [DataMember] public int Targets_Event_SubscribeHosing { get; set; }
-        [DataMember] public int Targets_Event_TargetsCanceled { get; set; }
-        [DataMember] public int Targets_Event_AlreadyHereHosting { get; set; }
-        [DataMember] public int Targets_Event_SubscribeSelfToHosting { get; set; }
-
-        [DataMember] public int Hosting_Event_AliveHosts { get; set; }
-        [DataMember] public int Hosting_Event_DeadHosts { get; set; }
-        [DataMember] public int Hosting_Event_SubscribeTargets { get; set; }
-        [DataMember] public int Hosting_Event_AlreadyHereTargets { get; set; }
-        [DataMember] public int Hosting_Event_SubscribeSelfToTargets { get; set; }
+        [DataMember] public int Targets_Event_IsStarted { get; set; }
+        [DataMember] public int Targets_Event_IsStopped { get; set; }
+        [DataMember] public int Targets_Event_IsAlreadyStopped { get; set; }
+        [DataMember] public int Targets_Event_AliveHosting { get; set; }
+        [DataMember] public int Targets_Event_DeadHosting { get; set; }
+        [DataMember] public int Targets_Event_NewHosing { get; set; }
+        [DataMember] public int Targets_Event_CanceledHosting { get; set; }
+        [DataMember] public int Targets_Event_KnownHosing { get; set; }
+        [DataMember] public int Targets_Event_UnknownHosing { get; set; }
+        [DataMember] public int Targets_Event_SubscribedToHosting { get; set; }
+        [DataMember] public int Targets_Event_NewWcfChannel { get; set; }
 
         [DataMember] public int Targets_Error_SubscribeToHosting { get; set; }
+        [DataMember] public int Targets_Error_HostingCalls { get; set; }
 
-        [DataMember] public int Hosting_Error_SubscribeSelfToTargets { get; set; }
+        [DataMember] public int Targets_State_AliveHostings { get; set; }
 
-        public static DebugCounters AccumulateAll(params DebugCounters[] all)
+        //----------------------------------------------------------//
+
+        [DataMember] public int Hosting_Event_IsStarted { get; set; }
+        [DataMember] public int Hosting_Event_IsStopped { get; set; }
+        [DataMember] public int Hosting_Event_IsAlreadyStopped { get; set; }
+        [DataMember] public int Hosting_Event_AliveTargets { get; set; }
+        [DataMember] public int Hosting_Event_DeadTargets { get; set; }
+        [DataMember] public int Hosting_Event_NewTargets { get; set; }
+        [DataMember] public int Hosting_Event_CanceledTargets { get; set; }
+        [DataMember] public int Hosting_Event_KnownTargets { get; set; }
+        [DataMember] public int Hosting_Event_UnknownTargets { get; set; }
+        [DataMember] public int Hosting_Event_SubscribedToTargets { get; set; }
+        [DataMember] public int Hosting_Event_NewWcfChannel { get; set; }
+
+        [DataMember] public int Hosting_Error_SubscribeToTargets { get; set; }
+        [DataMember] public int Hosting_Error_TargetsCalls { get; set; }
+
+        [DataMember] public int Hosting_State_AliveTargets { get; set; }
+
+        //----------------------------------------------------------//
+
+        internal DebugCounters(CountersDb cdb)
+        { }
+
+        //----------------------------------------------------------//
+
+        public override string ToString()
         {
-            var sum = new DebugCounters();
-            Array.ForEach(all, counters => sum.Accumulate(counters));
-            return sum;
+            return
+                this.Format();
         }
     }
 
@@ -74,7 +109,7 @@ namespace l4p.VcallModel.Core
 
                 sb
                     .StartWithNewLine()
-                    .AppendFormat("  {0,-32} {1}", name, value);
+                    .AppendFormat("  {0,-48} {1}", name, value);
             }
         }
 
@@ -87,6 +122,18 @@ namespace l4p.VcallModel.Core
             counters.Format(sb);
 
             return 
+                sb.ToString();
+        }
+
+        public static string Format(this DebugCounters counters)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(counters.GetType().FullName);
+
+            counters.Format(sb);
+
+            return
                 sb.ToString();
         }
 

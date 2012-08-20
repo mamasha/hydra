@@ -8,6 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Core;
+using l4p.VcallModel.Manager;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel
@@ -35,9 +36,6 @@ namespace l4p.VcallModel
         #endregion
 
         #region construction
-
-        static Vcall()
-        { }
 
         private Vcall()
         { }
@@ -91,10 +89,10 @@ namespace l4p.VcallModel
             try
             {
                 if (defaultHosting != null)
-                    defaultHosting.Close();
+                    _core.Close(defaultHosting);
 
                 if (defaultTarget != null)
-                    defaultTarget.Close();
+                    _core.Close(defaultTarget);
 
                 Helpers.TryCatch(_log,
                     () => core.Stop(),
@@ -342,7 +340,12 @@ namespace l4p.VcallModel
         /// Get internal debug counters </summary>
         public static DebugCounters DebugCounters
         {
-            get { return _core.DebugCounters; }
+            get
+            {
+                assert_services_are_started();
+                return 
+                    _core.Counters;
+            }
         }
 
         #endregion

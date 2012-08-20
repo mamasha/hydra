@@ -1,5 +1,8 @@
 ﻿using System;
 using l4p.VcallModel;
+using l4p.VcallModel.Configuration;
+using l4p.VcallModel.Core;
+using l4p.VcallModel.Manager;
 
 namespace l4p.VcallTests.StubsHosting
 {
@@ -8,17 +11,6 @@ namespace l4p.VcallTests.StubsHosting
         private static void Foo()
         {
             Console.WriteLine("Foo() is called");
-        }
-
-        public static void HostStubs()
-        {
-            var host = Vcall.NewHosting();
-            host.AddTarget(Foo);
-        }
-
-        public static void StartSingleEmptyHosting()
-        {
-            Vcall.NewHosting();
         }
     }
 }

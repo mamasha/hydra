@@ -19,7 +19,7 @@ namespace l4p.VcallModel.Discovery
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly Self _self;
-        private readonly IEngine _engine;
+        private readonly IManager _manager;
 
         #endregion
 
@@ -34,7 +34,7 @@ namespace l4p.VcallModel.Discovery
         private HostResolver(HostResolverConfiguration config)
         {
             _self = new Self();
-            _engine = new Engine(_self);
+            _manager = new Manager(_self);
 
             _self.config = config;
 
@@ -42,8 +42,8 @@ namespace l4p.VcallModel.Discovery
             trace("Resolving scope URI is '{0}'", _self.resolvingScope.ToString());
 
             _self.repo = new Repository();
-            _self.thread = new ResolvingThread(_self, _engine);
-            _self.wcf = new WcfDiscovery(_self, _engine);
+            _self.thread = new ResolvingThread(_self, _manager);
+            _self.wcf = new WcfDiscovery(_self, _manager);
         }
 
         #endregion
@@ -54,18 +54,6 @@ namespace l4p.VcallModel.Discovery
         {
             string msg = Helpers.SafeFormat(format, args);
             _log.Trace("{0}: {1}", _self.config.ResolvingKey, msg);
-        }
-
-        private DebugCounters get_accumulated_counters()
-        {
-            var counters = new DebugCounters();
-
-            counters.Accumulate(_engine.Counters);
-            counters.Accumulate(_self.repo.Counters);
-            counters.Accumulate(_self.wcf.Counters);
-            counters.Accumulate(_self.thread.Counters);
-
-            return counters;
         }
 
         private static Uri make_resolving_scope(Self self)
@@ -80,19 +68,19 @@ namespace l4p.VcallModel.Discovery
         private void publish(Publisher publisher)
         {
             _self.thread.PostAction(
-                () => _engine.Publish(publisher));
+                () => _manager.Publish(publisher));
         }
 
         private void subscribe(Subscriber subscriber)
         {
             _self.thread.PostAction(
-                () => _engine.Subscribe(subscriber));
+                () => _manager.Subscribe(subscriber));
         }
 
         private void cancel(string tag)
         {
             _self.thread.PostAction(
-                () => _engine.Cancel(tag));
+                () => _manager.Cancel(tag));
         }
 
         #endregion
@@ -145,11 +133,6 @@ namespace l4p.VcallModel.Discovery
         void IHostResolver.Cancel(string tag)
         {
             cancel(tag);
-        }
-
-        DebugCounters IHostResolver.Counters
-        {
-            get { return get_accumulated_counters(); }
         }
 
         #endregion

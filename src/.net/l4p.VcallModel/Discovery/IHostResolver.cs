@@ -38,7 +38,5 @@ namespace l4p.VcallModel.Discovery
         void Publish(string callbackUri, string role, string tag);
         void Subscribe(PublishNotification onPublish, string tag);
         void Cancel(string tag);
-
-        DebugCounters Counters { get; }
     }
 }

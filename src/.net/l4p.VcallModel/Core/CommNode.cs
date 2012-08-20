@@ -6,26 +6,36 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.IO;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
+    class CommNodeException : VcallModelException
+    {
+        public CommNodeException() { }
+        public CommNodeException(string message) : base(message) { }
+        public CommNodeException(string message, Exception inner) : base(message, inner) { }
+    }
+
     abstract class CommNode : ICommNode
     {
-        #region constants
+        #region helpers
 
-        protected readonly int _subscribe_RetryTimeout = 1000;
+        protected enum State { None, Started, Stopped }
 
         #endregion
 
         #region members
 
-        public const string HostingRole = "hosting";
-        public const string TargetsRole = "targets";
+        private static readonly ILogger _log = Logger.New<CommNode>();
+        private static readonly IHelpers Helpers = HelpersInUse.All;
 
         protected readonly string _tag;
 
-        protected DebugCounters _counters;
+        protected readonly DebugCounters _counters;
+
+        protected State _state;
 
         #endregion
 
@@ -33,15 +43,26 @@ namespace l4p.VcallModel.Core
 
         protected CommNode()
         {
-            _tag = Guid.NewGuid().ToString("B");
-            _counters = new DebugCounters();
+            _tag = Helpers.RandomName8();
+            _counters = Context.Get<ICountersDb>().NewCounters();
+            _state = State.None;
         }
 
         #endregion
 
         #region protected api
 
-        protected abstract void Stop(TimeSpan timeout);
+        protected abstract void Close();
+        protected abstract void Stop(TimeSpan timeout, IDoneEvent observer);
+
+        protected void validate_state(State state)
+        {
+            if (_state == state)
+                return;
+
+            throw 
+                Helpers.MakeNew<CommNodeException>(null, _log, "Communication internal state is invalid; required={0} actual={1}", state, _state);
+        }
 
         #endregion
 
@@ -52,15 +73,15 @@ namespace l4p.VcallModel.Core
             get { return _tag; }
         }
 
-        DebugCounters ICommNode.DebugCounters
+        void ICommNode.Close()
         {
-            get { return DebugCounters.AccumulateAll(_counters); }
+            Close();
         }
 
-        void ICommNode.Stop(Internal access, TimeSpan timeout)
+        void ICommNode.Stop(Internal access, int timeout, IDoneEvent observer)
         {
             InternalAccess.Check(access);
-            Stop(timeout);
+            Stop(TimeSpan.FromMilliseconds(timeout), observer);
         }
 
         #endregion

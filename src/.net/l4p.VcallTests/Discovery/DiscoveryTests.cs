@@ -9,34 +9,61 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using l4p.VcallModel;
+using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Core;
+using l4p.VcallModel.Manager;
+using l4p.VcallModel.Utils;
 using NUnit.Framework;
 
 namespace l4p.VcallTests.Discovery
 {
     [TestFixture]
-    class DiscoveryTests
+    public class DiscoveryTests
     {
-        [SetUp] void StartVcallSerives() { Vcall.StartServices("l4p.vcalltests"); }
-        [TearDown] void StopVcallServices() { Vcall.StopServices(); }
-
         [Test, Explicit]
         public void SingleTargets_shoul_connect_to_hosting()
         {
-            var targets = Vcall.GetTargets();
+            var vcall = VcallSubsystem.New("l4p.vcalltests");
+            vcall.Start();
 
-            Thread.Sleep(5000*1000);
+            var targets = vcall.NewTargets();
 
-            targets.Close();
+            UnitTestingHelpers.RunUpdateLoop(30*1000, () => vcall.Counters);
+
+            vcall.Close(targets);
+            vcall.Stop();
+
+            Console.WriteLine(vcall.Counters.Format("Vcall is stopped"));
         }
 
         [Test, Explicit]
         public void SingleHosting_shoul_connect_to_targets()
         {
+            var vcall = VcallSubsystem.New("l4p.vcalltests");
+            vcall.Start();
+
+            vcall.NewHosting();
+
+            UnitTestingHelpers.RunUpdateLoop(30 * 1000, () => vcall.Counters);
+
+            vcall.Stop();
+
+            Console.WriteLine(vcall.Counters.Format("Vcall is stopped"));
+        }
+
+        [Test, Explicit]
+        public void SingleTargets_shoul_connect_to_hosting_then_gone()
+        {
+            var targets = Vcall.GetTargets();
+            Thread.Sleep(10*1000);
+            targets.Close();
+        }
+
+        [Test, Explicit]
+        public void SingleHosting_shoul_connect_to_targets_then_gone()
+        {
             var hosting = Vcall.NewHosting();
-
-            Thread.Sleep(1000 * 1000);
-
+            Thread.Sleep(10*1000);
             hosting.Close();
         }
 
@@ -74,7 +101,10 @@ namespace l4p.VcallTests.Discovery
         [Test, Explicit]
         public void ManyToMany_should_get_self_notifications()
         {
-            const int count = 3;
+            var vcall = VcallSubsystem.New();
+            vcall.Start();
+
+            const int count = 7;
             var random = new Random();
 
             var hosts = new IVhosting[count];
@@ -84,15 +114,95 @@ namespace l4p.VcallTests.Discovery
             {
                 Thread.Sleep(random.Next(100));
 
-                hosts[i] = Vcall.NewHosting();
-                targets[i] = Vcall.GetTargets();
+                hosts[i] = vcall.NewHosting();
+                targets[i] = vcall.NewTargets();
             }
 
-            for (var timer = Stopwatch.StartNew(); timer.ElapsedMilliseconds < 120*1000; )
+            UnitTestingHelpers.RunUpdateLoop(120 * 1000, () => vcall.Counters);
+
+            vcall.Stop();
+
+            Console.WriteLine(vcall.Counters.Format("Vcall is stopped"));
+        }
+
+        [Test, Explicit]
+        public void ManyToMany_load_test()
+        {
+            var vcall = VcallSubsystem.New();
+            vcall.Start();
+
+            const int count = 10;
+            var random = new Random();
+
+            var nodes = new ICommNode[count];
+
+            int targetsCount = 0;
+            int hostingCount = 0;
+
+            Console.WriteLine("Spawning {0} nodes", count);
+
+            for (int i = 0; i < count; i++)
             {
-                Thread.Sleep(3000);
-                Console.WriteLine(Vcall.DebugCounters.Format("No active hosts"));
+                Thread.Sleep(random.Next(100));
+
+                if (random.Next(100) % 2 == 0)
+                {
+                    nodes[i] = vcall.NewTargets();
+                    targetsCount++;
+                }
+                else
+                {
+                    nodes[i] = vcall.NewHosting();
+                    hostingCount++;
+                }
             }
+
+            var stopTimer = Stopwatch.StartNew();
+            var printTimer = Stopwatch.StartNew();
+
+            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+
+            for (;;)
+            {
+                Thread.Sleep(random.Next(10));
+
+                int indx = random.Next(count);
+
+                nodes[indx].Close();
+
+                if (random.Next(100) % 2 == 0)
+                {
+                    nodes[indx] = vcall.NewTargets();
+                    targetsCount++;
+                }
+                else
+                {
+                    nodes[indx] = vcall.NewHosting();
+                    hostingCount++;
+                }
+
+                if (printTimer.ElapsedMilliseconds > 5000)
+                {
+                    Console.WriteLine(vcall.Counters.Format("Spawned {0} targets and {1} hostings", targetsCount, hostingCount));
+                    printTimer.Restart();
+                }
+
+                if (stopTimer.ElapsedMilliseconds > 1 * 60 * 1000)
+                    break;
+            }
+
+            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+
+            for (int i = 0; i < count; i++)
+            {
+                nodes[i].Close();
+            }
+
+            Thread.Sleep(15 * 1000);
+
+            vcall.Stop();
+
+            UnitTestingHelpers.RunUpdateLoop(60 * 1000, () => vcall.Counters);
         }
     }
 }

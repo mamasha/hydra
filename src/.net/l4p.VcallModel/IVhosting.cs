@@ -31,11 +31,6 @@ namespace l4p.VcallModel
         void AddTarget<T1, T2, R>(Func<T1, T2, R> target);
 
         /// <summary>
-        /// Close all underlaying services of this hosting instance </summary>
-        /// <remarks>Calling any method after Close() is called will lead to unpredictable results</remarks>
-        void Close();
-
-        /// <summary>
         /// Actual URI this hosting is listening on</summary>
         string ListeningUri { get; }
     }

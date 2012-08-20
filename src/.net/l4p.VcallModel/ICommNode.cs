@@ -18,11 +18,11 @@ namespace l4p.VcallModel
         string Tag { get; }
 
         /// <summary>
-        /// Get debug counters of this node </summary>
-        DebugCounters DebugCounters { get; }
+        /// Close this node </summary>
+        void Close();
 
         /// <summary>
         /// Use Close() instead </summary>
-        void Stop(Internal access, TimeSpan timeout);
+        void Stop(Internal access, int timeout, IDoneEvent observer);
     }
 }

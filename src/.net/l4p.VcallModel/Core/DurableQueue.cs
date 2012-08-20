@@ -20,8 +20,6 @@ namespace l4p.VcallModel.Core
         IDurableOperation[] FindCanceled(string cancelationTag);
         int CalcNextTimeout(DateTime now);
         void Remove(IDurableOperation op);
-
-        DebugCounters Counters { get; }
     }
 
     class DurableQueue : IDurableQueue
@@ -47,7 +45,7 @@ namespace l4p.VcallModel.Core
         private DurableQueue()
         {
             _ops = new LinkedList<IDurableOperation>();
-            _counters = new DebugCounters();
+            _counters = Context.Get<ICountersDb>().NewCounters();
         }
 
         #endregion
@@ -127,11 +125,6 @@ namespace l4p.VcallModel.Core
 
             if (wasThere)
                 _counters.Vcall_State_DurableOperations--;
-        }
-
-        DebugCounters IDurableQueue.Counters
-        {
-            get { return _counters; }
         }
 
         #endregion

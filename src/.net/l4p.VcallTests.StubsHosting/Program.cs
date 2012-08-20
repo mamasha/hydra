@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Threading;
 using l4p.VcallModel;
 using l4p.VcallModel.Configuration;
+using l4p.VcallModel.Utils;
 
 namespace l4p.VcallTests.StubsHosting
 {
@@ -117,26 +118,15 @@ namespace l4p.VcallTests.StubsHosting
 
             Vcall.StartServices(vconfig);
 
-            DefaultHosting.StartSingleEmptyHosting();
-
-            Console.WriteLine("Resolving key is '{0}'", Vcall.Config.ResolvingKey);
+            Vcall.NewHosting();
+            Vcall.GetTargets();
 
             Console.WriteLine();
             Console.WriteLine("Hosting is running (discovery is on)");
             Console.WriteLine("press Ctrl-C to stop");
             Console.WriteLine();
 
-            for (;;)
-            {
-                try
-                {
-                    Thread.Sleep(1000);
-                }
-                catch
-                {
-                    break;
-                }
-            }
+            UnitTestingHelpers.RunUpdateLoop(10 * 60 * 1000, () => Vcall.DebugCounters);
 
             Vcall.StopServices();
         }
@@ -152,7 +142,7 @@ namespace l4p.VcallTests.StubsHosting
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex);
             }
         }
     }

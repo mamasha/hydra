@@ -28,7 +28,8 @@ namespace l4p.VcallModel.Core
         bool IsDone { get; }
         bool IsFailed { get; }
         int FailureCount { get; }
-        string LastErrMsg { get; }
+        Exception LastError { get; }
+        string LastErrorMsg { get; }
         string Comments { get; }
         DateTime ToBeInvokedAt { get; }
         string CancelationTag { get; }
@@ -197,7 +198,12 @@ namespace l4p.VcallModel.Core
             get { return _failureCount; }
         }
 
-        string IDurableOperation.LastErrMsg
+        Exception IDurableOperation.LastError
+        {
+            get { return _lastFailedWith; }
+        }
+
+        string IDurableOperation.LastErrorMsg
         {
             get
             {
@@ -239,7 +245,7 @@ namespace l4p.VcallModel.Core
             if (error != null)
             {
                 had_failed_call(now, error);
-                _log.Warn("'{0}' has failed (retries={2}); {1}", _args.Comments, error.Message, _consequentFailures);
+                _log.Warn(error, "'{0}' has failed (retries={2}); {1}", _args.Comments, error.Message, _consequentFailures);
                 return false;
             }
 

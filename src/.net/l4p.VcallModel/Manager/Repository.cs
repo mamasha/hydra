@@ -8,9 +8,10 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Core
+namespace l4p.VcallModel.Manager
 {
     interface IRepository
     {
@@ -27,6 +28,8 @@ namespace l4p.VcallModel.Core
         private static readonly ILogger _log = Logger.New<Repository>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
+        private readonly DebugCounters _counters;
+
         private List<ICommNode> _nodes;
 
         #endregion
@@ -41,6 +44,7 @@ namespace l4p.VcallModel.Core
 
         private Repository()
         {
+            _counters = Context.Get<ICountersDb>().NewCounters();
             _nodes = new List<ICommNode>();
         }
 
@@ -55,6 +59,8 @@ namespace l4p.VcallModel.Core
             var newNodes = new List<ICommNode>(nodes);
             newNodes.Add(node);
 
+            _counters.Vcall_State_ActiveNodes++;
+
             _nodes = newNodes;
         }
 
@@ -66,6 +72,8 @@ namespace l4p.VcallModel.Core
                 from node in nodes
                 where !ReferenceEquals(node, nodeToRemove)
                 select node;
+
+            _counters.Vcall_State_ActiveNodes--;
 
             _nodes = newNodes.ToList();
         }

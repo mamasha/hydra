@@ -9,7 +9,7 @@ using System;
 using System.Runtime.Serialization;
 using System.ServiceModel;
 using l4p.VcallModel.Target;
-using l4p.VcallModel.Utils;
+using l4p.VcallModel.Target.Proxies;
 
 namespace l4p.VcallModel.Hosting
 {
@@ -21,12 +21,14 @@ namespace l4p.VcallModel.Hosting
     }
 
     [DataContract]
-    class HostingInfo
+    class TargetsInfo
     {
         [DataMember] public string Tag { get; set; }
-        [DataMember] public string CallbackUri { get; set; }
+        [DataMember] public string ListeningUri { get; set; }
         [DataMember] public string NameSpace { get; set; }
         [DataMember] public string HostName { get; set; }
+
+        public ITargetsPeer Proxy { get; set; }
     }
 
     [ServiceContract]
@@ -38,20 +40,4 @@ namespace l4p.VcallModel.Hosting
         [OperationContract(IsOneWay = true)]
         void CancelTargets(string targetsTag);
     }
-
-    class HostingPeerProxy : ClientBase<IHostingPeer>, IHostingPeer
-    {
-        public static IHostingPeer New(string uri)
-        {
-            return new HostingPeerProxy(uri);
-        }
-
-        private HostingPeerProxy(string uri) :
-            base(new TcpStreamBindng(), new EndpointAddress(uri))
-        { }
-
-        void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
-        void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
-    }
-
 }

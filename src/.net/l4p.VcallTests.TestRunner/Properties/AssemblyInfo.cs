@@ -2,18 +2,15 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: InternalsVisibleTo("l4p.VcallTests")]
-[assembly: InternalsVisibleTo("l4p.VcallTests.StubsHosting")]
-
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("l4p.VcallModel")]
-[assembly: AssemblyDescription("Distributed functions hosting/invocation model")]
+[assembly: AssemblyTitle("l4p.VcallTests.TestRunner")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Mamasha Knows Ltd.")]
-[assembly: AssemblyProduct("l4p.VcallModel")]
-[assembly: AssemblyCopyright("Copyright © Mamasha Knows 2010-2012")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("l4p.VcallTests.TestRunner")]
+[assembly: AssemblyCopyright("Copyright ©  2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -23,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("8c7f2755-2a34-4a49-a332-e3a8687b5345")]
+[assembly: Guid("fab81e8c-336d-4b47-a272-e6695a5c4ccc")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -35,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("3.0.0.0")]
-[assembly: AssemblyFileVersion("3.0.0.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

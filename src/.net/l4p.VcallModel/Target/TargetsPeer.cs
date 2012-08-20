@@ -7,9 +7,9 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Linq.Expressions;
-using System.ServiceModel;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Hosting;
+using l4p.VcallModel.Manager;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Target
@@ -58,8 +58,17 @@ namespace l4p.VcallModel.Target
 
         private void trace(string format, params object[] args)
         {
+            if (_log.TraceIsOff)
+                return;
+
             string msg = Helpers.SafeFormat(format, args);
             _log.Trace("targets.{0}: {1}", _tag, msg);
+        }
+
+        private void warn(string format, params object[] args)
+        {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Warn("targets.{0}: {1}", _tag, msg);
         }
 
         private void try_catch(Action action, Action onError, string errFmt, params object[] args)
@@ -85,15 +94,15 @@ namespace l4p.VcallModel.Target
         private void subsribe_self_to_hosting(string callbackUri, TargetsInfo myInfo)
         {
             var hosting = try_catch(
-                () => HostingPeerProxy.New(callbackUri+"abra"), 
+                () => Proxies.HostingPeer.New(callbackUri), 
                 () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to create proxy at '{1}'", _tag, callbackUri);
 
             try_catch(
                 () => hosting.SubscribeTargets(myInfo),
                 () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to register self at host '{1}'", _tag, callbackUri);
 
-            _counters.Targets_Event_SubscribeSelfToHosting++;
-            trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.AliveCount);
+            _counters.Targets_Event_SubscribedToHosting++;
+            trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.HostingCount);
         }
 
         private void handle_alive_hosting(string callbackUri)
@@ -106,37 +115,94 @@ namespace l4p.VcallModel.Target
                 HostName = Helpers.GetLocalhostFqdn()
             };
 
-            _thr.DoOnce(_subscribe_RetryTimeout, callbackUri,
+            _thr.DoOnce(_config.SubscribeToHosting_RetryTimeout.Value, callbackUri,
                 () => subsribe_self_to_hosting(callbackUri, myInfo), "subscribe targets.{0} to {1}", _tag, callbackUri);
         }
 
         private void handle_dead_hosting(string callbackUri)
         {
             _thr.Cancel(callbackUri);
-            _repo.CleanUp(callbackUri);
 
-            trace("host at '{0}' is dead; aliveHosts={1})", callbackUri, _repo.AliveCount);
+            var info = _repo.FindHosting(callbackUri);
+
+            if (info == null)
+                return;
+
+            _repo.RemoveHosting(info);
+
+            trace("host at '{0}' is dead; aliveHosts={1})", callbackUri, _repo.HostingCount);
         }
 
         private void subscribe_hosting(HostingInfo info)
         {
             trace("Got a new hosting.{0} at '{1}'", info.Tag, info.CallbackUri);
 
-            if (_repo.HasHosting(info))
+            if (_repo.HasHosting(info.Tag))
             {
                 trace("hosting.{0} at {1} is already registered", info.Tag, info.CallbackUri);
-                _counters.Targets_Event_AlreadyHereHosting++;
+                _counters.Targets_Event_KnownHosing++;
                 return;
             }
 
+            info.Proxy = Proxies.HostingPeer.New(info.CallbackUri);
+
             _repo.AddHosting(info);
-            _counters.Targets_Event_SubscribeHosing++;
+            _counters.Targets_Event_NewHosing++;
         }
 
-        private void cancel_hosting(string hostingUri)
+        private void cancel_hosting(string hostingTag)
         {
-            throw
-                Helpers.NewNotImplementedException();
+            var info = _repo.FindHosting(hostingTag);
+
+            if (info == null)
+            {
+                trace("unknown hosting.{0}", hostingTag);
+                _counters.Targets_Event_UnknownHosing++;
+                return;
+            }
+
+            _repo.RemoveHosting(info);
+            _counters.Targets_Event_CanceledHosting++;
+
+            trace("hosting.{0} is canceled", hostingTag);
+        }
+
+        private void stop(TimeSpan timeout, IDoneEvent observer)
+        {
+            if (_state == State.Stopped)
+            {
+                _counters.Targets_Event_IsAlreadyStopped++;
+                return;
+            }
+
+            _state = State.Stopped;
+
+            var hostings = _repo.GetHostings();
+
+            foreach (var hosting in hostings)
+            {
+                _repo.RemoveHosting(hosting);
+
+                try
+                {
+                    hosting.Proxy.CancelTargets(_tag);
+                }
+                catch (Exception ex)
+                {
+                    warn("Failed to cancel hosting.{0} gracefully; {1}", hosting.Tag, ex.GetDetailedMessage());
+                }
+            }
+
+            _wcf.Stop(timeout);
+            _thr.Stop(() => stop_tail(observer));
+        }
+
+        private void stop_tail(IDoneEvent observer)
+        {
+            _counters.Targets_Event_IsStopped++;
+            observer.Signal();
+
+            trace("hosting is stopped");
         }
 
         #endregion
@@ -153,7 +219,10 @@ namespace l4p.VcallModel.Target
 
             _thr.Start();
 
-            trace("target is started");
+            _state = State.Started;
+            _counters.Targets_Event_IsStarted++;
+
+            trace("targets is started");
         }
 
         public string Tag
@@ -164,7 +233,7 @@ namespace l4p.VcallModel.Target
         public void OnHostingDiscovery(string callbackUri, string role, bool alive)
             // discovery thread
         {
-            if (role != HostingRole)
+            if (role != _config.HostingRole)
                 return;
 
             if (alive)
@@ -172,14 +241,14 @@ namespace l4p.VcallModel.Target
                 _thr.PostAction(
                     () => handle_alive_hosting(callbackUri));
 
-                _counters.Targets_Event_HostIsAlive++;
+                _counters.Targets_Event_AliveHosting++;
             }
             else
             {
                 _thr.PostAction(
                     () => handle_dead_hosting(callbackUri));
 
-                _counters.Targets_Event_HostIsDead++;
+                _counters.Targets_Event_DeadHosting++;
             }
         }
 
@@ -192,16 +261,16 @@ namespace l4p.VcallModel.Target
 
         #region protected api
 
-        protected override void Stop(TimeSpan timeout)
+        protected override void Close()
         {
-            trace("target is stopped");
+            _core.Close(this);
+        }
 
-            // notify all hostings
-
-            _wcf.Stop(timeout);
-            _thr.Stop();
-
-            trace("targets is stopped");
+        protected override void Stop(TimeSpan timeout, IDoneEvent observer)
+            // user arbitrary thread
+        {
+            _thr.PostAction(
+                () => stop(timeout, observer), "stopping hosting.{0}", _tag);
         }
 
         #endregion
@@ -251,11 +320,6 @@ namespace l4p.VcallModel.Target
         {
             throw
                 Helpers.NewNotImplementedException();
-        }
-
-        void IVtarget.Close()
-        {
-            _core.CloseTargets(this);
         }
 
         #endregion

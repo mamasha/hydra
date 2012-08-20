@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Target;
 using l4p.VcallModel.Utils;
@@ -15,14 +16,15 @@ namespace l4p.VcallModel.Hosting
 {
     interface IRepository
     {
-        void AddTargets(TargetsInfo info);
-        void RemoveTargets(string tag);
-        bool HasTargets(TargetsInfo info);
         int TargetsCount { get; }
+        bool HasTargets(string tag);
 
-        ITargetsPeer GetTargets(string tag);
+        void AddTargets(TargetsInfo info);
+        void RemoveTargets(TargetsInfo info);
 
-        void CleanUp(string id);
+        TargetsInfo FindTargets(string tag);
+        TargetsInfo GetTargets(string tag);
+        TargetsInfo[] GetTargets();
     }
 
     class Repository : IRepository
@@ -32,97 +34,92 @@ namespace l4p.VcallModel.Hosting
         private static readonly ILogger _log = Logger.New<HostingPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private readonly ICommNode _hosting;
-
-        private IDictionary<string, ITargetsPeer> _targets;
+        private readonly IDictionary<string, TargetsInfo> _targets;
+        private readonly DebugCounters _counters;
 
         #endregion
 
         #region construction
 
-        public static IRepository New(CommNode hosting)
+        public static IRepository New()
         {
             return
-                new Repository(hosting);
+                new Repository();
         }
 
-        private Repository(ICommNode hostring)
+        private Repository()
         {
-            _hosting = hostring;
-            _targets = new Dictionary<string, ITargetsPeer>();
+            _targets = new Dictionary<string, TargetsInfo>();
+            _counters = Context.Get<ICountersDb>().NewCounters();
+        }
+
+        #endregion
+
+        #region private
+
+        private TargetsInfo find_targets(string tag)
+        {
+            var targets =
+                from target in _targets.Values
+                where target.Tag == tag || target.ListeningUri == tag
+                select target;
+
+            return
+                targets.FirstOrDefault();
         }
 
         #endregion
 
         #region IRepository
 
-        void IRepository.AddTargets(TargetsInfo info)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-
-            var targets = _targets;
-
-            if (targets.ContainsKey(info.Tag))
-            {
-                _log.Warn("hosting.{0}: target '{1}' is already here", _hosting.Tag, info.Tag);
-            }
-
-            var newTargets = new Dictionary<string, ITargetsPeer>(targets);
-//            targets[info.Tag] = targetsPeer;
-
-            _targets = newTargets;
-        }
-
-        void IRepository.RemoveTargets(string tag)
-        {
-            var targets = _targets;
-
-            var newTargets = new Dictionary<string, ITargetsPeer>(targets);
-            bool wasHere = newTargets.Remove(tag);
-
-            if (!wasHere)
-            {
-                _log.Warn("hosting.{0}: target '{1}' was not here", _hosting.Tag, tag);
-            }
-
-            _targets = newTargets;
-        }
-
-        bool IRepository.HasTargets(TargetsInfo info)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
         int IRepository.TargetsCount
         {
-            get
-            {
-                throw
-                    Helpers.NewNotImplementedException();
-            }
+            get { return _targets.Count; }
         }
 
-        ITargetsPeer IRepository.GetTargets(string tag)
+        bool IRepository.HasTargets(string tag)
         {
-            var targets = _targets;
+            return
+                _targets.ContainsKey(tag);
+        }
 
-            ITargetsPeer target;
+        void IRepository.AddTargets(TargetsInfo info)
+        {
+            _targets[info.Tag] = info;
+            _counters.Hosting_State_AliveTargets++;
+        }
 
-            if (_targets.TryGetValue(tag, out target) == false)
+        void IRepository.RemoveTargets(TargetsInfo info)
+        {
+            bool wasThere = _targets.Remove(info.Tag);
+
+            if (wasThere)
+                _counters.Hosting_State_AliveTargets--;
+        }
+
+        TargetsInfo IRepository.FindTargets(string tag)
+        {
+            return
+                find_targets(tag);
+        }
+
+        TargetsInfo IRepository.GetTargets(string tag)
+        {
+            var target = find_targets(tag);
+
+            if (target == null)
             {
-                _log.Warn("hosting.{0}: target '{1}' is not here", _hosting.Tag, tag);
-                return null;
+                throw
+                    Helpers.MakeNew<HostingPeerException>(null, _log, "Can't find targets.{0}", tag);
             }
 
             return target;
         }
 
-        void IRepository.CleanUp(string id)
+        TargetsInfo[] IRepository.GetTargets()
         {
-            throw
-                Helpers.NewNotImplementedException();
+            return
+                _targets.Values.ToArray();
         }
 
         #endregion

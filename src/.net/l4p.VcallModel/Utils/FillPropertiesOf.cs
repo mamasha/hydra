@@ -163,8 +163,13 @@ namespace l4p.VcallModel.Utils.Impl
 
         private bool is_primitive(Type type)
         {
-            return
-                _primitives.Contains(type);
+            if (_primitives.Contains(type))
+                return true;
+
+            if (type.FullName.StartsWith("l4p.") == false)
+                return true;
+
+            return false;
         }
 
         private void add_property(PropertyInfo info, object obj)
@@ -187,9 +192,6 @@ namespace l4p.VcallModel.Utils.Impl
                     add_property(info, obj);
                     continue;
                 }
-
-                if (info.PropertyType.FullName.StartsWith("l4p.") == false)
-                    throw new FillPropertiesOfException(String.Format("External non-primitives are not supported: property '{0}' of type '{1}'", info.Name, info.PropertyType));
 
                 object value = info.GetValue(obj, null);
 

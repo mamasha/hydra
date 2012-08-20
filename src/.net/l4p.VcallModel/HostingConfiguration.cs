@@ -50,5 +50,10 @@ namespace l4p.VcallModel
         /// Explicit TCP port to listen on for incoming calls 
         /// If not specified a random available port is chosen</summary>
         public int? Port { get; set; }
+
+        public string TargetsRole { get; set; }
+        public string HostingRole { get; set; }
+
+        public int? SubscribeToTargets_RetryTimeout { get; set; }
     }
 }
