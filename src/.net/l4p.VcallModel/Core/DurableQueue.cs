@@ -20,6 +20,10 @@ namespace l4p.VcallModel.Core
         IDurableOperation[] FindCanceled(string cancelationTag);
         int CalcNextTimeout(DateTime now);
         void Remove(IDurableOperation op);
+
+        IDurableOperation[] GetAll();
+
+        int Count { get; }
     }
 
     class DurableQueue : IDurableQueue
@@ -125,6 +129,17 @@ namespace l4p.VcallModel.Core
 
             if (wasThere)
                 _counters.Vcall_State_DurableOperations--;
+        }
+
+        IDurableOperation[] IDurableQueue.GetAll()
+        {
+            return
+                _ops.ToArray();
+        }
+
+        int IDurableQueue.Count
+        {
+            get { return _ops.Count; }
         }
 
         #endregion

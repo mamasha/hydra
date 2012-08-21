@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using l4p.VcallModel.Utils;
 
@@ -22,14 +23,16 @@ namespace l4p.VcallModel.Core
     interface IActiveThread
     {
         void Start();
+        void SetStopSignal();
         void Stop();
-        void Stop(Action stopTail);
 
         void PostAction(Action action);
         void PostAction(Action action, string format, params object[] args);
 
         void DoOnce(int retryTimeout, string cancelationTag, Action action, string format, params object[] args);
         void Cancel(string cancelationTag);
+
+        void CancelAll();
 
         DebugCounters Counters { get; }
     }
@@ -42,17 +45,20 @@ namespace l4p.VcallModel.Core
         {
             public string Name { get; set; }
             public int MaxAwaitTimeout { get; set; }
-            public int FailureTimeout { get; set; }
+            public int DurableFailureTimeout { get; set; }
             public int StartTimeout { get; set; }
             public int StopTimeout { get; set; }
+
+            public Action<Action> RunInContextOf { get; set; }
 
             public Config()
             {
                 Name = "ActiveThread";
                 MaxAwaitTimeout = 1000;
-                FailureTimeout = 60000;
-                StartTimeout = 2000;
-                StopTimeout = 1000;
+                DurableFailureTimeout = 60000;
+                StartTimeout = 5000;
+                StopTimeout = 2000;
+                RunInContextOf = stub => stub();
             }
         }
 
@@ -70,6 +76,7 @@ namespace l4p.VcallModel.Core
         private readonly ManualResetEvent _isStoppedEvent;
 
         private readonly Config _config;
+        private readonly Action<Action> _RunInContextOf;
 
         private readonly DebugCounters _counters;
 
@@ -88,6 +95,7 @@ namespace l4p.VcallModel.Core
         private ActiveThread(Config config)
         {
             _config = config;
+            _RunInContextOf = config.RunInContextOf;
 
             _que = ActionQueue.New();
             _durables = DurableQueue.New();
@@ -104,6 +112,12 @@ namespace l4p.VcallModel.Core
         #endregion
 
         #region private
+
+        private void warn(string format, params object[] args)
+        {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Warn("{0}: {1}", _config.Name, msg);
+        }
 
         private void info(string format, params object[] args)
         {
@@ -126,14 +140,26 @@ namespace l4p.VcallModel.Core
                 return;
 
             throw
-                Helpers.MakeNew<ActiveThreadException>(null, _log, "Method should be executed in a self thread");
+                Helpers.MakeNew<ActiveThreadException>(null, _log, "Method should be executed on 'this' thread");
         }
 
-        private static void do_action_request(Action action)
+        private void assert_current_thread_is_foreign()
         {
+            if (!ReferenceEquals(Thread.CurrentThread, _thr))
+                return;
+
+            throw
+                Helpers.MakeNew<ActiveThreadException>(null, _log, "Method should be executed on a 'different' thread");
+        }
+
+        private void do_action_request(Action action)
+        {
+            var timer = Stopwatch.StartNew();
+
             try
             {
                 action();
+                trace("action done in {0} msecs", timer.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
@@ -143,9 +169,12 @@ namespace l4p.VcallModel.Core
 
         private void action_with_comment(Action action, string format, params object[] args)
         {
+            var timer = Stopwatch.StartNew();
+
             try
             {
                 action();
+                trace("action done in {0} msecs; {1}", timer.ElapsedMilliseconds, format);
             }
             catch (Exception ex)
             {
@@ -204,6 +233,9 @@ namespace l4p.VcallModel.Core
                 if (_stopFlagIsOn)
                     break;
             }
+
+            if (_durables.Count > 0)
+                warn("There are {0} active durables", _durables.Count);
         }
 
         private void main()
@@ -212,7 +244,7 @@ namespace l4p.VcallModel.Core
 
             try
             {
-                maintenance_loop();
+                _RunInContextOf(maintenance_loop);
             }
             catch (Exception ex)
             {
@@ -239,18 +271,16 @@ namespace l4p.VcallModel.Core
             }
         }
 
-        void IActiveThread.Stop()
+        void IActiveThread.SetStopSignal()
         {
-            _que.Push(() => _stopFlagIsOn = true);
+            assert_current_thread_is_mine();
+            _stopFlagIsOn = true;
         }
 
-        void IActiveThread.Stop(Action stopTail)
+        void IActiveThread.Stop()
         {
-            _que.Push(() =>
-                          {
-                              _stopFlagIsOn = true;
-                              stopTail();
-                          });
+            assert_current_thread_is_foreign();
+            _que.Push(() => _stopFlagIsOn = true);
         }
 
         void IActiveThread.PostAction(Action action)
@@ -269,7 +299,7 @@ namespace l4p.VcallModel.Core
             assert_current_thread_is_mine();
 
             var durable = 
-                DurableOperation.NewDoOnce(retryTimeout, _config.FailureTimeout, cancelationTag, action, format, args);
+                DurableOperation.NewDoOnce(retryTimeout, _config.DurableFailureTimeout, cancelationTag, action, format, args);
 
             if (durable.Invoke())
                 return;
@@ -289,6 +319,20 @@ namespace l4p.VcallModel.Core
             }
 
             trace("Canceled {0} durables; cancelationTag='{1}'", durables.Length, cancelationTag);
+        }
+
+        void IActiveThread.CancelAll()
+        {
+            assert_current_thread_is_mine();
+
+            var durables = _durables.GetAll();
+
+            foreach (var durable in durables)
+            {
+                _durables.Remove(durable);
+            }
+
+            trace("Canceled {0} durables", durables.Length);
         }
 
         DebugCounters IActiveThread.Counters

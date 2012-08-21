@@ -6,6 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Hosting;
@@ -46,7 +47,10 @@ namespace l4p.VcallModel.Target
             var thrConfig = new ActiveThread.Config
             {
                 Name = String.Format("targets.{0}", _tag),
-                FailureTimeout = core.Config.Timeouts.ActiveThread_FailureTimeout
+                DurableFailureTimeout = core.Config.Timeouts.ActiveThread_DurableFailure,
+                StartTimeout = core.Config.Timeouts.ActiveThread_Start,
+                StopTimeout = core.Config.Timeouts.ActiveThread_Stop,
+                RunInContextOf = main => _core.RunInMyContext(main)
             };
 
             _thr = ActiveThread.New(thrConfig);
@@ -105,8 +109,10 @@ namespace l4p.VcallModel.Target
             trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.HostingCount);
         }
 
-        private void handle_alive_hosting(string callbackUri)
+        private void handle_hosting_hello(string callbackUri)
         {
+            trace("hello from hosting.{0}", callbackUri);
+
             var myInfo = new TargetsInfo
             {
                 Tag = _tag,
@@ -119,8 +125,10 @@ namespace l4p.VcallModel.Target
                 () => subsribe_self_to_hosting(callbackUri, myInfo), "subscribe targets.{0} to {1}", _tag, callbackUri);
         }
 
-        private void handle_dead_hosting(string callbackUri)
+        private void handle_hosting_bye(string callbackUri)
         {
+            trace("bye from hosting.{0}", callbackUri);
+
             _thr.Cancel(callbackUri);
 
             var info = _repo.FindHosting(callbackUri);
@@ -140,14 +148,14 @@ namespace l4p.VcallModel.Target
             if (_repo.HasHosting(info.Tag))
             {
                 trace("hosting.{0} at {1} is already registered", info.Tag, info.CallbackUri);
-                _counters.Targets_Event_KnownHosing++;
+                _counters.Targets_Event_KnownHosting++;
                 return;
             }
 
             info.Proxy = Proxies.HostingPeer.New(info.CallbackUri);
 
             _repo.AddHosting(info);
-            _counters.Targets_Event_NewHosing++;
+            _counters.Targets_Event_NewHosting++;
         }
 
         private void cancel_hosting(string hostingTag)
@@ -157,7 +165,7 @@ namespace l4p.VcallModel.Target
             if (info == null)
             {
                 trace("unknown hosting.{0}", hostingTag);
-                _counters.Targets_Event_UnknownHosing++;
+                _counters.Targets_Event_UnknownHosting++;
                 return;
             }
 
@@ -169,6 +177,9 @@ namespace l4p.VcallModel.Target
 
         private void stop(TimeSpan timeout, IDoneEvent observer)
         {
+            trace("stopping...");
+            var timer = Stopwatch.StartNew();
+
             if (_state == State.Stopped)
             {
                 _counters.Targets_Event_IsAlreadyStopped++;
@@ -182,6 +193,7 @@ namespace l4p.VcallModel.Target
             foreach (var hosting in hostings)
             {
                 _repo.RemoveHosting(hosting);
+                _thr.Cancel(hosting.Tag);
 
                 try
                 {
@@ -193,16 +205,19 @@ namespace l4p.VcallModel.Target
                 }
             }
 
+            trace("stopping... all targets are notified (in {0} msecs)", timer.ElapsedMilliseconds);
+
+            _thr.CancelAll();
+
             _wcf.Stop(timeout);
-            _thr.Stop(() => stop_tail(observer));
-        }
+            trace("stopping... wcf peers are stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
-        private void stop_tail(IDoneEvent observer)
-        {
+            _thr.SetStopSignal();
             _counters.Targets_Event_IsStopped++;
-            observer.Signal();
 
-            trace("hosting is stopped");
+            trace("targets is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
+
+            observer.Signal();
         }
 
         #endregion
@@ -221,8 +236,6 @@ namespace l4p.VcallModel.Target
 
             _state = State.Started;
             _counters.Targets_Event_IsStarted++;
-
-            trace("targets is started");
         }
 
         public string Tag
@@ -239,16 +252,16 @@ namespace l4p.VcallModel.Target
             if (alive)
             {
                 _thr.PostAction(
-                    () => handle_alive_hosting(callbackUri));
+                    () => handle_hosting_hello(callbackUri), "handle hello from {0}.{1}", role, callbackUri);
 
-                _counters.Targets_Event_AliveHosting++;
+                _counters.Targets_Event_HelloFromHosting++;
             }
             else
             {
                 _thr.PostAction(
-                    () => handle_dead_hosting(callbackUri));
+                    () => handle_hosting_bye(callbackUri), "handle bye from {0}.{1}", role, callbackUri);
 
-                _counters.Targets_Event_DeadHosting++;
+                _counters.Targets_Event_ByeFromHosting++;
             }
         }
 

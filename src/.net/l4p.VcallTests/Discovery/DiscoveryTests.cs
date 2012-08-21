@@ -126,9 +126,14 @@ namespace l4p.VcallTests.Discovery
         }
 
         [Test, Explicit]
-        public void ManyToMany_load_test()
+        public void ManyToMany_stress_test()
         {
-            var vcall = VcallSubsystem.New();
+            var vconfig = new VcallConfiguration
+            {
+                Logging = new LoggingConfiguration { ToFile = @"logs\vcall.log" }
+            };
+
+            var vcall = VcallSubsystem.New(vconfig);
             vcall.Start();
 
             const int count = 10;
@@ -187,7 +192,7 @@ namespace l4p.VcallTests.Discovery
                     printTimer.Restart();
                 }
 
-                if (stopTimer.ElapsedMilliseconds > 1 * 60 * 1000)
+                if (stopTimer.ElapsedMilliseconds > 120 * 1000)
                     break;
             }
 
@@ -198,11 +203,100 @@ namespace l4p.VcallTests.Discovery
                 nodes[i].Close();
             }
 
-            Thread.Sleep(15 * 1000);
+            UnitTestingHelpers.RunUpdateLoop(30 * 1000, () => vcall.Counters);
 
             vcall.Stop();
 
-            UnitTestingHelpers.RunUpdateLoop(60 * 1000, () => vcall.Counters);
+            UnitTestingHelpers.RunUpdateLoop(20 * 1000, () => vcall.Counters);
+        }
+
+        [Test, Explicit]
+        public void ManyToMany_load_test()
+        {
+            var vconfig = new VcallConfiguration
+            {
+                Logging = new LoggingConfiguration { ToFile = @"logs\vcall.log" }
+            };
+
+            var vcall = VcallSubsystem.New(vconfig);
+            vcall.Start();
+
+            const int count = 4;
+            var random = new Random();
+
+            var nodes = new ICommNode[count];
+            var timers = new Stopwatch[count];
+
+            int targetsCount = 0;
+            int hostingCount = 0;
+            int closedCount = 0;
+
+            Action<int> NewNode = indx =>
+            {
+                if (nodes[indx] != null)
+                {
+                    closedCount++;
+                    nodes[indx].Close();
+                }
+
+                if (random.Next(100) % 2 == 0)
+                {
+                    nodes[indx] = vcall.NewTargets();
+                    targetsCount++;
+                }
+                else
+                {
+                    nodes[indx] = vcall.NewHosting();
+                    hostingCount++;
+                }
+
+                timers[indx] = Stopwatch.StartNew();
+            };
+
+            Console.WriteLine("Spawning {0} nodes", count);
+
+            for (int i = 0; i < count; i++)
+            {
+                Thread.Sleep(random.Next(100));
+                NewNode(i);
+            }
+
+            var stopTimer = Stopwatch.StartNew();
+            var printTimer = Stopwatch.StartNew();
+
+            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+
+            for (;;)
+            {
+                Thread.Sleep(random.Next(10));
+
+                int indx = random.Next(count);
+
+                  if (timers[indx].ElapsedMilliseconds > 3 * 1000)
+                      NewNode(indx);
+
+                if (printTimer.ElapsedMilliseconds > 5000)
+                {
+                    Console.WriteLine(vcall.Counters.Format("Spawned {0} targets and {1} hostings (closed={2})", targetsCount, hostingCount, closedCount));
+                    printTimer.Restart();
+                }
+
+                if (stopTimer.ElapsedMilliseconds > 5 * 60 * 1000)
+                    break;
+            }
+
+            Console.WriteLine("Spawned {0} targets and {1} hostings (closed={2})", targetsCount, hostingCount, closedCount);
+
+            for (int i = 0; i < count; i++)
+            {
+                nodes[i].Close();
+            }
+
+            UnitTestingHelpers.RunUpdateLoop(30 * 1000, () => vcall.Counters);
+
+            vcall.Stop();
+
+            UnitTestingHelpers.RunUpdateLoop(20 * 1000, () => vcall.Counters);
         }
     }
 }

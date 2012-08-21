@@ -7,8 +7,10 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading;
+using l4p.VcallModel.Configuration;
 
 namespace l4p.VcallModel.Utils
 {
@@ -24,27 +26,26 @@ namespace l4p.VcallModel.Utils
         void Trace(string format, params object[] args);
     }
 
-    enum LogPriority
-    {
-        None = 0,
-        Fatal = 1,
-        Error = 2,
-        Warn = 3,
-        Info = 4,
-        Trace = 5
-    }
-
     class Logger : ILogger
     {
         #region members
 
-        private static LogPriority _priority = LogPriority.Trace;
-
+        private static LoggingConfiguration _config = new LoggingConfiguration();
         private string _name;
 
         #endregion
 
         #region construction
+
+        public static LoggingConfiguration Config
+        {
+            get { return _config; }
+            set
+            {
+                ensure_folder_exists(value.ToFile);
+                _config = value;
+            }
+        }
 
         public static ILogger New(string name)
         {
@@ -74,7 +75,7 @@ namespace l4p.VcallModel.Utils
             int tid = Thread.CurrentThread.ManagedThreadId;
 
             return
-                String.Format("{0} {1}.thread.{2} {3} ", now, pid, tid, priorityLetter);
+                String.Format("{0} {1}.thread.{2:000}  {3} ", now, pid, tid, priorityLetter);
         }
 
         private static string build_user_message(string format, params object[] args)
@@ -91,10 +92,59 @@ namespace l4p.VcallModel.Utils
             return msg;
         }
 
+        private static void ensure_folder_exists(string logPath)
+        {
+            if (logPath == null)
+                return;
+
+            string path = Path.GetDirectoryName(logPath);
+            Directory.CreateDirectory(path);
+        }
+
+        private static void send_to_file(string msg, string logPath, int maxRetires)
+        {
+            var lines = new[] {msg};
+            int retries = 0;
+            int snoozeFor = 1;
+
+            for(;;)
+            {
+                try
+                {
+                    File.AppendAllLines(logPath, lines);
+                    return;
+                }
+                catch (Exception)
+                {
+                    if (retries++ > maxRetires)
+                        throw;
+                }
+
+                snoozeFor = Math.Min(snoozeFor*2, 200);
+                Thread.Sleep(snoozeFor);
+            }
+        }
+
         private void send_message(string msg)
         {
-//            Console.WriteLine(msg);
-            Trace.WriteLine(msg, _name);
+            try
+            {
+                if (_config.ToTrace)
+                    Trace.WriteLine(msg, _name);
+
+                if (_config.ToConsole)
+                    Console.WriteLine(msg);
+
+                if (_config.ToMethod != null)
+                    _config.ToMethod(msg);
+
+                if (_config.ToFile != null)
+                    send_to_file(msg, _config.ToFile, _config.WriteToFileRetires);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Failed to log a message; " + ex.Message);
+            }
         }
 
         #endregion
@@ -103,12 +153,14 @@ namespace l4p.VcallModel.Utils
 
         public bool TraceIsOff
         {
-            get { return false; }
+            get { return _config.Level < LogLevel.Trace; }
         }
 
         void ILogger.Error(string format, params object[] args)
         {
-            if (_priority < LogPriority.Error)
+            const LogLevel msgLevel = LogLevel.Error;
+
+            if (msgLevel > _config.Level)
                 return;
 
             string msg = build_prefix("E") + build_user_message(format, args);
@@ -117,7 +169,9 @@ namespace l4p.VcallModel.Utils
 
         void ILogger.Error(Exception ex, string format, params object[] args)
         {
-            if (_priority < LogPriority.Error)
+            const LogLevel msgLevel = LogLevel.Error;
+
+            if (msgLevel > _config.Level)
                 return;
 
             var sbMsg = new StringBuilder();
@@ -133,7 +187,9 @@ namespace l4p.VcallModel.Utils
 
         void ILogger.Warn(string format, params object[] args)
         {
-            if (_priority < LogPriority.Warn)
+            const LogLevel msgLevel = LogLevel.Warn;
+
+            if (msgLevel > _config.Level)
                 return;
 
             string msg = build_prefix("W") + build_user_message(format, args);
@@ -142,7 +198,9 @@ namespace l4p.VcallModel.Utils
 
         void ILogger.Warn(Exception ex, string format, params object[] args)
         {
-            if (_priority < LogPriority.Warn)
+            const LogLevel msgLevel = LogLevel.Warn;
+
+            if (msgLevel > _config.Level)
                 return;
 
             var sbMsg = new StringBuilder();
@@ -158,7 +216,9 @@ namespace l4p.VcallModel.Utils
 
         void ILogger.Info(string format, params object[] args)
         {
-            if (_priority < LogPriority.Info)
+            const LogLevel msgLevel = LogLevel.Info;
+
+            if (msgLevel > _config.Level)
                 return;
 
             string msg = build_prefix("I") + build_user_message(format, args);
@@ -168,7 +228,9 @@ namespace l4p.VcallModel.Utils
 
         void ILogger.Trace(string format, params object[] args)
         {
-            if (_priority < LogPriority.Trace)
+            const LogLevel msgLevel = LogLevel.Trace;
+
+            if (msgLevel > _config.Level)
                 return;
 
             string msg = build_prefix("T") + build_user_message(format, args);

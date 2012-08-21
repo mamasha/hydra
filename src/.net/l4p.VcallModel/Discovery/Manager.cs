@@ -46,7 +46,13 @@ namespace l4p.VcallModel.Discovery
         private void trace(string format, params object[] args)
         {
             string msg = Helpers.SafeFormat(format, args);
-            _log.Trace("{0}: {1}", _self.config.ResolvingKey, msg);
+            _log.Trace("discovery.{0}: {1}", _self.config.ResolvingKey, msg);
+        }
+
+        private void warn(Exception ex, string format, params object[] args)
+        {
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Warn(ex, "discovery.{0}: {1}", _self.config.ResolvingKey, msg);
         }
 
         private void send_hello_message_of(Publisher publisher)
@@ -63,14 +69,18 @@ namespace l4p.VcallModel.Discovery
         private void update_subscriber(Subscriber subscriber)
         {
             var peers = _self.repo.GetPeers();
+            int count = peers.Length;
 
             foreach (var peer in peers)
             {
                 fire_notification(subscriber, peer.CallbackUri, peer.Role, true);
             }
+
+            _counters.Discovery_Event_HelloNotificationsProduced += count;
+            trace("{0} hello notifications are generated", count);
         }
 
-        private static void fire_notification(Subscriber subscriber, string callbackUri, string role, bool alive)
+        private void fire_notification(Subscriber subscriber, string callbackUri, string role, bool alive)
         {
             try
             {
@@ -78,7 +88,7 @@ namespace l4p.VcallModel.Discovery
             }
             catch (Exception ex)
             {
-                _log.Warn(ex, "Failed while notifying targets.{0}", subscriber.Tag);
+                warn(ex, "Failed while notifying targets.{0}", subscriber.Tag);
             }
         }
 
@@ -118,7 +128,7 @@ namespace l4p.VcallModel.Discovery
 
             send_hello_message_of(publisher);
 
-            trace("hosing.{0} ({1}) is published at '{2}'", publisher.Tag, publisher.Role, publisher.CallbackUri);
+            trace("{0}.{1} is published at '{2}'", publisher.Role, publisher.Tag, publisher.CallbackUri);
         }
 
         void IManager.Subscribe(Subscriber subscriber)
@@ -140,8 +150,9 @@ namespace l4p.VcallModel.Discovery
         {
             if (_self.repo.HasPeer(callbackUri))
             {
-                _counters.Discovery_Event_HelloMsgIsKeepAlive++;
                 _self.repo.KeepAlive(callbackUri, lastSeen);
+
+                _counters.Discovery_Event_HelloMsgIsKeepAlive++;
                 return;
             }
 
@@ -155,14 +166,15 @@ namespace l4p.VcallModel.Discovery
             _self.repo.AddPeer(peer);
 
             var subscribers = _self.repo.GetSubscribers();
+            int count = subscribers.Length;
 
             foreach (var subscriber in subscribers)
             {
                 fire_notification(subscriber, callbackUri, role, true);
             }
 
-            _counters.Discovery_Event_HelloNotificationsProduced += subscribers.Length;
-            trace("{0} hello notifications are generated", subscribers.Length);
+            _counters.Discovery_Event_HelloNotificationsProduced += count;
+            trace("{0} hello notifications are generated", count);
         }
 
         void IManager.SendHelloMessages()
@@ -190,9 +202,6 @@ namespace l4p.VcallModel.Discovery
             if (peers.Length == 0)
                 return;
 
-            if (subscribers.Length == 0)
-                return;
-
             var notificationCount = 0;
 
             foreach (var subsriber in subscribers)
@@ -205,9 +214,10 @@ namespace l4p.VcallModel.Discovery
             }
 
             _self.repo.RemovePeers(peers);
-
             _counters.Discovery_Event_ByeNotificationsProduced += notificationCount;
-            trace("{0} bye notifications are generated", notificationCount);
+
+            if (notificationCount > 0)
+                trace("{0} bye notifications are generated", notificationCount);
         }
 
         #endregion
