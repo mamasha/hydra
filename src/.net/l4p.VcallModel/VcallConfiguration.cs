@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Configuration
@@ -18,7 +17,7 @@ namespace l4p.VcallModel.Configuration
 
         public int AddressInUseRetries { get; set; }
         public Timeouts Timeouts { get; set; }
-        public Logging Logging { get; set; }
+        public LoggingConfiguration Logging { get; set; }
 
         public VcallConfiguration()
         {
@@ -29,7 +28,7 @@ namespace l4p.VcallModel.Configuration
             HostingRole = "hosting";
             AddressInUseRetries = 3;
             Timeouts = new Timeouts();
-            Logging = new Logging();
+            Logging = new LoggingConfiguration();
         }
 
         public VcallConfiguration Clone()
@@ -48,47 +47,52 @@ namespace l4p.VcallModel.Configuration
         public int HostingOpening { get; set; }
         public int TargetOpening { get; set; }
         public int NodeClosing { get; set; }
-        public int TargetsHostingSubscription { get; set; }
+        public int WcfHostClosing { get; set; }
+        public int TargetsHostingSubscriptionRetry { get; set; }
 
         public int DurableQueue_NoDurablesIdle { get; set; }
-        public int ActiveThread_FailureTimeout { get; set; }
+        public int ActiveThread_Start { get; set; }
+        public int ActiveThread_Stop { get; set; }
+        public int ActiveThread_DurableFailure { get; set; }
 
         public Timeouts()
         {
-            const int OpenWcfHostTimeout = 5000;
-            const int CloseWcfHostTimeout = 10000;
+            ByeMessageGap = 10*1000;
+            HelloMessageGap = 3*1000;
+            DiscoveryOpening = 5*1000;
+            DiscoveryClosing = 10*1000;
+            HostingOpening = 5*1000;
+            NodeClosing = 10*1000;
+            WcfHostClosing = 5*1000;
+            TargetOpening = 5*1000;
+            TargetsHostingSubscriptionRetry = 1*1000;
 
-            ByeMessageGap = 10000;
-            HelloMessageGap = 3000;
-            DiscoveryOpening = OpenWcfHostTimeout;
-            DiscoveryClosing = CloseWcfHostTimeout;
-            HostingOpening = OpenWcfHostTimeout;
-            NodeClosing = CloseWcfHostTimeout;
-            TargetOpening = OpenWcfHostTimeout;
-            TargetsHostingSubscription = 1000;
-
-            DurableQueue_NoDurablesIdle = 1000;
-            ActiveThread_FailureTimeout = 60000;
+            DurableQueue_NoDurablesIdle = 1*1000;
+            ActiveThread_Start = 5*1000;
+            ActiveThread_Stop = 2*1000;
+            ActiveThread_DurableFailure = 60*1000;
         }
     }
 
-    public enum LoggingLevel
+    public enum LogLevel
     {
         Off, Error, Warn, Info, Trace
     }
 
-    public class Logging
+    public class LoggingConfiguration
     {
-        public LoggingLevel Level { get; set; }
+        public LogLevel Level { get; set; }
         public string ToFile { get; set; }
+        public int WriteToFileRetires { get; set; }
         public bool ToTrace { get; set; }
         public bool ToConsole { get; set; }
         public Action<string> ToMethod { get; set; }
 
-        public Logging()
+        public LoggingConfiguration()
         {
-            Level = LoggingLevel.Trace;
+            Level = LogLevel.Trace;
             ToFile = null;
+            WriteToFileRetires = 21;
             ToTrace = true;
             ToConsole = false;
             ToMethod = null;

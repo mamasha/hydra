@@ -6,6 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Diagnostics;
 using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
@@ -26,6 +27,8 @@ namespace l4p.VcallModel.Manager
         IVtarget NewTargets(TargetConfiguration config = null);
 
         void Close(ICommNode node);
+
+        void RunInMyContext(Action action);
 
         DebugCounters Counters { get; }
     }
@@ -69,6 +72,7 @@ namespace l4p.VcallModel.Manager
 
         private VcallSubsystem(VcallConfiguration vconfig)
         {
+            Logger.Config = vconfig.Logging;
             _countersDb = CountersDb.New();
 
             using (Context.With(_countersDb))
@@ -109,12 +113,14 @@ namespace l4p.VcallModel.Manager
         private void close_comm_nodes(ICommNode[] nodes)
         {
             int timeout = _self.vconfig.Timeouts.NodeClosing;
+            int wcfTimeout = _self.vconfig.Timeouts.WcfHostClosing;
 
             var observer = DoneEvent.New(nodes.Length);
 
             foreach (var node in nodes)
             {
-                _engine.CloseNode(timeout, node, observer);
+                trace("closing node.{0}", node.Tag);
+                _engine.CloseNode(wcfTimeout, node, observer);
             }
 
             if (observer.Wait(timeout) == false)
@@ -124,8 +130,19 @@ namespace l4p.VcallModel.Manager
                 lock (_self.mutex)
                     _self.counters.Vcall_Error_CloseCommNode += notReadyCount;
 
-                warn("Failed to stop {0} nodes", notReadyCount);
+                if (notReadyCount == 1)
+                    warn("Failed to stop node.{0} (timeout={1})", nodes[0].Tag, timeout);
+                else
+                    warn("Failed to stop {0} nodes (timeout={1})", notReadyCount, timeout);
             }
+            else
+            {
+                if (nodes.Length == 1)
+                    trace("node.{0} is closed", nodes[0].Tag);
+                else
+                    trace("{0} nodes are closed", nodes.Length);
+            }
+
         }
 
         #endregion
@@ -163,7 +180,7 @@ namespace l4p.VcallModel.Manager
 
             if (config.TargetsRole == null) config.TargetsRole = _self.vconfig.TargetsRole;
             if (config.HostingRole == null) config.HostingRole = _self.vconfig.HostingRole;
-            if (config.SubscribeToTargets_RetryTimeout == null) config.SubscribeToTargets_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscription;
+            if (config.SubscribeToTargets_RetryTimeout == null) config.SubscribeToTargets_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscriptionRetry;
 
             HostingPeer hosting;
 
@@ -197,7 +214,7 @@ namespace l4p.VcallModel.Manager
             if (config.TargetsRole == null) config.TargetsRole = _self.vconfig.TargetsRole;
             if (config.HostingRole == null) config.HostingRole = _self.vconfig.HostingRole;
             if (config.NonRegisteredCall == NonRegisteredCallPolicy.Default) config.NonRegisteredCall = _self.vconfig.NonRegisteredCall;
-            if (config.SubscribeToHosting_RetryTimeout == null) config.SubscribeToHosting_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscription;
+            if (config.SubscribeToHosting_RetryTimeout == null) config.SubscribeToHosting_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscriptionRetry;
 
             TargetsPeer targets;
 
@@ -226,6 +243,14 @@ namespace l4p.VcallModel.Manager
             // user arbitrary thread
         {
             close_comm_nodes(new[] {node});
+        }
+
+        void IVcallSubsystem.RunInMyContext(Action action)
+        {
+            using (Context.With(_countersDb))
+            {
+                action();
+            }
         }
 
         DebugCounters IVcallSubsystem.Counters

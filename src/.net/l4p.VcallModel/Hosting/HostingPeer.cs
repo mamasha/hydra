@@ -6,6 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Diagnostics;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Manager;
 using l4p.VcallModel.Target;
@@ -45,7 +46,10 @@ namespace l4p.VcallModel.Hosting
             var thrConfig = new ActiveThread.Config
             {
                 Name = String.Format("hosting.{0}", _tag),
-                FailureTimeout = core.Config.Timeouts.ActiveThread_FailureTimeout
+                DurableFailureTimeout = core.Config.Timeouts.ActiveThread_DurableFailure,
+                StartTimeout = core.Config.Timeouts.ActiveThread_Start,
+                StopTimeout = core.Config.Timeouts.ActiveThread_Stop,
+                RunInContextOf = main => _core.RunInMyContext(main)
             };
 
             _thr = ActiveThread.New(thrConfig);
@@ -88,8 +92,10 @@ namespace l4p.VcallModel.Hosting
             }
         }
 
-        private void handle_alive_targets(string callbackUri)
+        private void handle_targets_hello(string callbackUri)
         {
+            trace("hello from targets.{0}", callbackUri);
+
             var myInfo = new HostingInfo
             {
                 Tag = _tag,
@@ -102,8 +108,10 @@ namespace l4p.VcallModel.Hosting
                 () => subsribe_self_to_targets(callbackUri, myInfo), "subscribe hosting.{0} to {1}", _tag, callbackUri);
         }
 
-        private void handle_dead_targets(string callbackUri)
+        private void handle_targets_bye(string callbackUri)
         {
+            trace("bye from targets.{0}", callbackUri);
+
             _thr.Cancel(callbackUri);
 
             var info = _repo.FindTargets(callbackUri);
@@ -118,9 +126,7 @@ namespace l4p.VcallModel.Hosting
 
         private void subsribe_self_to_targets(string callbackUri, HostingInfo myInfo)
         {
-            var targets = try_catch(
-                () => Proxies.TargetsPeer.New(callbackUri),
-                () => ++_counters.Hosting_Error_SubscribeToTargets, "hosting.{0}: Failed to create proxy at '{1}'", _tag, callbackUri);
+            var targets = Proxies.TargetsPeer.New(callbackUri);
 
             try_catch(
                 () => targets.SubscribeHosting(myInfo),
@@ -176,6 +182,9 @@ namespace l4p.VcallModel.Hosting
 
         private void stop(TimeSpan timeout, IDoneEvent observer)
         {
+            trace("stopping...");
+            var timer = Stopwatch.StartNew();
+
             if (_state == State.Stopped)
             {
                 _counters.Hosting_Event_IsAlreadyStopped++;
@@ -188,6 +197,7 @@ namespace l4p.VcallModel.Hosting
 
             foreach (var target in targets)
             {
+                _thr.Cancel(target.Tag);
                 _repo.RemoveTargets(target);
 
                 try
@@ -200,16 +210,19 @@ namespace l4p.VcallModel.Hosting
                 }
             }
 
+            trace("stopping... all targets are notified (int {0} msecs)", timer.ElapsedMilliseconds);
+
+            _thr.CancelAll();
+
             _wcf.Stop(timeout);
-            _thr.Stop(() => stop_tail(observer));
-        }
+            trace("stopping... wcf peers are stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
-        private void stop_tail(IDoneEvent observer)
-        {
+            _thr.SetStopSignal();
             _counters.Hosting_Event_IsStopped++;
-            observer.Signal();
 
-            trace("hosting is stopped");
+            trace("hosting is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
+
+            observer.Signal();
         }
 
         #region public api
@@ -226,8 +239,6 @@ namespace l4p.VcallModel.Hosting
 
             _state = State.Started;
             _counters.Hosting_Event_IsStarted++;
-
-            trace("hosting is started");
         }
 
         public string Tag
@@ -244,16 +255,16 @@ namespace l4p.VcallModel.Hosting
             if (alive)
             {
                 _thr.PostAction(
-                    () => handle_alive_targets(callbackUri));
+                    () => handle_targets_hello(callbackUri), "handling hello from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_AliveTargets++;
+                _counters.Hosting_Event_HelloFromTargets++;
             }
             else
             {
                 _thr.PostAction(
-                    () => handle_dead_targets(callbackUri));
+                    () => handle_targets_bye(callbackUri), "handling bye from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_DeadTargets++;
+                _counters.Hosting_Event_ByeFromTargets++;
             }
         }
 

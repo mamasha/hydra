@@ -60,6 +60,8 @@ namespace l4p.VcallTests.Manager
             Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStarted, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStopped, Is.EqualTo(1));
+
+            Console.WriteLine(counters);
         }
 
         [Test]

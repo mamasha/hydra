@@ -49,12 +49,12 @@ namespace l4p.VcallModel.Core
         [DataMember] public int Targets_Event_IsStarted { get; set; }
         [DataMember] public int Targets_Event_IsStopped { get; set; }
         [DataMember] public int Targets_Event_IsAlreadyStopped { get; set; }
-        [DataMember] public int Targets_Event_AliveHosting { get; set; }
-        [DataMember] public int Targets_Event_DeadHosting { get; set; }
-        [DataMember] public int Targets_Event_NewHosing { get; set; }
+        [DataMember] public int Targets_Event_HelloFromHosting { get; set; }
+        [DataMember] public int Targets_Event_ByeFromHosting { get; set; }
+        [DataMember] public int Targets_Event_NewHosting { get; set; }
         [DataMember] public int Targets_Event_CanceledHosting { get; set; }
-        [DataMember] public int Targets_Event_KnownHosing { get; set; }
-        [DataMember] public int Targets_Event_UnknownHosing { get; set; }
+        [DataMember] public int Targets_Event_KnownHosting { get; set; }
+        [DataMember] public int Targets_Event_UnknownHosting { get; set; }
         [DataMember] public int Targets_Event_SubscribedToHosting { get; set; }
         [DataMember] public int Targets_Event_NewWcfChannel { get; set; }
 
@@ -68,8 +68,8 @@ namespace l4p.VcallModel.Core
         [DataMember] public int Hosting_Event_IsStarted { get; set; }
         [DataMember] public int Hosting_Event_IsStopped { get; set; }
         [DataMember] public int Hosting_Event_IsAlreadyStopped { get; set; }
-        [DataMember] public int Hosting_Event_AliveTargets { get; set; }
-        [DataMember] public int Hosting_Event_DeadTargets { get; set; }
+        [DataMember] public int Hosting_Event_HelloFromTargets { get; set; }
+        [DataMember] public int Hosting_Event_ByeFromTargets { get; set; }
         [DataMember] public int Hosting_Event_NewTargets { get; set; }
         [DataMember] public int Hosting_Event_CanceledTargets { get; set; }
         [DataMember] public int Hosting_Event_KnownTargets { get; set; }
