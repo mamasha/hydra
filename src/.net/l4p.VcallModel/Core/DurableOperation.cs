@@ -15,8 +15,8 @@ namespace l4p.VcallModel.Core
         public int? RequiredRepeats { get; set; }
         public int? RepeatTimeout { get; set; }
         public int? RetryTimeout { get; set; }
-        public int? MaxConsequentRetrires { get; set; }
-        public int? MaxConsequentFailuresSpan { get; set; }
+        public int? RetriesToLive { get; set; }
+        public int? TimeToLive { get; set; }
 
         public string CancelationTag { get; set; }
         public Action Action { get; set; }
@@ -46,8 +46,8 @@ namespace l4p.VcallModel.Core
             public int RequiredRepeats { get; set; }
             public TimeSpan RepeatTimeout { get; set; }
             public TimeSpan RetryTimeout { get; set; }
-            public int MaxConsequentRetrires { get; set; }
-            public TimeSpan MaxConsequentFailuresSpan { get; set; }
+            public int RetriresToLive { get; set; }
+            public TimeSpan TimeToLive { get; set; }
             public DateTime StartedAt { get; set; }
             public string CancelationTag { get; set; }
             public Action Action { get; set; }
@@ -85,13 +85,13 @@ namespace l4p.VcallModel.Core
                 Helpers.NewNotImplementedException();
         }
 
-        public static IDurableOperation NewDoOnce(int retryTimeout, int failureTimeout, string cancelationTag, Action action, string commentsFmt, params object[] commentsArgs)
+        public static IDurableOperation NewDoOnce(int retryTimeout, int timeToLive, string cancelationTag, Action action, string commentsFmt, params object[] commentsArgs)
         {
             var args = new DurableOperationArgs
                            {
                                 RequiredRepeats = 1,
                                 RetryTimeout = retryTimeout,
-                                MaxConsequentFailuresSpan = failureTimeout,
+                                TimeToLive = timeToLive,
                                 CancelationTag = cancelationTag,
                                 Action = action,
                                 Comments = Helpers.SafeFormat(commentsFmt, commentsArgs)
@@ -108,8 +108,8 @@ namespace l4p.VcallModel.Core
                 RequiredRepeats = args.RequiredRepeats ?? 1,
                 RepeatTimeout = TimeSpan.FromMilliseconds(args.RepeatTimeout ?? 0),
                 RetryTimeout = TimeSpan.FromMilliseconds(args.RetryTimeout ?? 0),
-                MaxConsequentRetrires = args.MaxConsequentRetrires ?? 0,
-                MaxConsequentFailuresSpan = TimeSpan.FromMilliseconds(args.MaxConsequentFailuresSpan ?? 0),
+                RetriresToLive = args.RetriesToLive ?? 0,
+                TimeToLive = TimeSpan.FromMilliseconds(args.TimeToLive ?? 0),
                 StartedAt = now,
                 CancelationTag = args.CancelationTag,
                 Action = args.Action,
@@ -175,8 +175,8 @@ namespace l4p.VcallModel.Core
             // failed if has too many retries or has failure time span which is expired
 
             _isFailed =
-                _consequentFailures == _args.MaxConsequentRetrires ||
-                (_args.MaxConsequentFailuresSpan > TimeSpan.Zero && _lastSucceededAt + _args.MaxConsequentFailuresSpan < now);
+                _consequentFailures == _args.RetriresToLive ||
+                (_args.TimeToLive > TimeSpan.Zero && _lastSucceededAt + _args.TimeToLive < now);
         }
 
         #endregion

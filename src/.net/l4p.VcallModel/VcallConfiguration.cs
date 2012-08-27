@@ -53,7 +53,7 @@ namespace l4p.VcallModel.Configuration
         public int DurableQueue_NoDurablesIdle { get; set; }
         public int ActiveThread_Start { get; set; }
         public int ActiveThread_Stop { get; set; }
-        public int ActiveThread_DurableFailure { get; set; }
+        public int ActiveThread_DurableTimeToLive { get; set; }
 
         public Timeouts()
         {
@@ -70,7 +70,7 @@ namespace l4p.VcallModel.Configuration
             DurableQueue_NoDurablesIdle = 1*1000;
             ActiveThread_Start = 5*1000;
             ActiveThread_Stop = 2*1000;
-            ActiveThread_DurableFailure = 60*1000;
+            ActiveThread_DurableTimeToLive = 60*1000;
         }
     }
 

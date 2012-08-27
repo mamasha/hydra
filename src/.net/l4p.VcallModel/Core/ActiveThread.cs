@@ -45,7 +45,7 @@ namespace l4p.VcallModel.Core
         {
             public string Name { get; set; }
             public int MaxAwaitTimeout { get; set; }
-            public int DurableFailureTimeout { get; set; }
+            public int DurableTimeToLive { get; set; }
             public int StartTimeout { get; set; }
             public int StopTimeout { get; set; }
 
@@ -55,7 +55,7 @@ namespace l4p.VcallModel.Core
             {
                 Name = "ActiveThread";
                 MaxAwaitTimeout = 1000;
-                DurableFailureTimeout = 60000;
+                DurableTimeToLive = 60000;
                 StartTimeout = 5000;
                 StopTimeout = 2000;
                 RunInContextOf = stub => stub();
@@ -299,7 +299,7 @@ namespace l4p.VcallModel.Core
             assert_current_thread_is_mine();
 
             var durable = 
-                DurableOperation.NewDoOnce(retryTimeout, _config.DurableFailureTimeout, cancelationTag, action, format, args);
+                DurableOperation.NewDoOnce(retryTimeout, _config.DurableTimeToLive, cancelationTag, action, format, args);
 
             if (durable.Invoke())
                 return;

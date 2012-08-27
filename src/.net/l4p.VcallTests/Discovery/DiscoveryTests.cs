@@ -272,8 +272,8 @@ namespace l4p.VcallTests.Discovery
 
                 int indx = random.Next(count);
 
-                  if (timers[indx].ElapsedMilliseconds > 3 * 1000)
-                      NewNode(indx);
+                if (timers[indx].ElapsedMilliseconds > 3 * 1000)
+                    NewNode(indx);
 
                 if (printTimer.ElapsedMilliseconds > 5000)
                 {
@@ -281,7 +281,7 @@ namespace l4p.VcallTests.Discovery
                     printTimer.Restart();
                 }
 
-                if (stopTimer.ElapsedMilliseconds > 5 * 60 * 1000)
+                if (stopTimer.ElapsedMilliseconds > 10 * 60 * 1000)
                     break;
             }
 

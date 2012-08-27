@@ -119,7 +119,7 @@ namespace l4p.VcallTests.Core
         [Test]
         public void FailureAfterTimeout_should_be_skipped_after_failure_timeout()
         {
-            var thr = ActiveThread.New(new ActiveThread.Config { DurableFailureTimeout = 500 });
+            var thr = ActiveThread.New(new ActiveThread.Config { DurableTimeToLive = 500 });
             thr.Start();
 
             thr.PostAction(

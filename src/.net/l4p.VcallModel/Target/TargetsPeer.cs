@@ -47,7 +47,7 @@ namespace l4p.VcallModel.Target
             var thrConfig = new ActiveThread.Config
             {
                 Name = String.Format("targets.{0}", _tag),
-                DurableFailureTimeout = core.Config.Timeouts.ActiveThread_DurableFailure,
+                DurableTimeToLive = core.Config.Timeouts.ActiveThread_DurableTimeToLive,
                 StartTimeout = core.Config.Timeouts.ActiveThread_Start,
                 StopTimeout = core.Config.Timeouts.ActiveThread_Stop,
                 RunInContextOf = main => _core.RunInMyContext(main)
