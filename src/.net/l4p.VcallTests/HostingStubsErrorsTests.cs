@@ -19,15 +19,15 @@ namespace l4p.VcallTests
         [Test]
         public void CallFoo_should_invoke_remote_Foo()
         {
-            var vtarget = Vcall.GetTargets();
-            vtarget.Call("SomeMissingFunctionName");
+            var vproxy = Vcall.NewProxy();
+            vproxy.Call("SomeMissingFunctionName");
         }
 
         [Test]
         public void CallUnregisteredFunction_should_throw()
         {
-            var vtarget = Vcall.GetTargets();
-            vtarget.Call("SomeMissingFunctionName");
+            var vproxy = Vcall.NewProxy();
+            vproxy.Call("SomeMissingFunctionName");
         }
     }
 }

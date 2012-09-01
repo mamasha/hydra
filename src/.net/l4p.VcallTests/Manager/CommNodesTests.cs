@@ -15,7 +15,7 @@ namespace l4p.VcallTests.Manager
     class CommNodesTests
     {
         [Test]
-        public void ExplicitCloseTargets_should_pass()
+        public void ExplicitCloseProxy_should_pass()
         {
             var vcall = VcallSubsystem.New();
 
@@ -32,18 +32,18 @@ namespace l4p.VcallTests.Manager
         }
 
         [Test]
-        public void ImplicitCloseTargets_should_pass()
+        public void ImplicitCloseProxy_should_pass()
         {
             var vcall = VcallSubsystem.New();
 
-            var node = vcall.NewTargets();
+            var node = vcall.NewProxy();
             node.Close();
 
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
-            Assert.That(counters.Targets_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Targets_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
 
             vcall.Stop();
         }
@@ -68,14 +68,14 @@ namespace l4p.VcallTests.Manager
         public void ImplicitCloseHosting_should_pass()
         {
             var vcall = VcallSubsystem.New();
-            vcall.NewTargets();
+            vcall.NewProxy();
             vcall.Stop();
 
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
-            Assert.That(counters.Targets_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Targets_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
         }
     }
 }

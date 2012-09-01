@@ -16,17 +16,17 @@ namespace l4p.VcallTests
         [SetUp] void StartVcallSerives() { Vcall.StartServices(); }
         [TearDown] void StopVcallServices() { Vcall.StopServices(); }
 
-        [Test, ExpectedException(typeof(VcallException), ExpectedMessage = "no registered targets", MatchType = MessageMatch.Contains)]
+        [Test, ExpectedException(typeof(VcallException), ExpectedMessage = "no registered proxies", MatchType = MessageMatch.Contains)]
         public void CallNotExisingFunction_should_throw()
         {
-            Vcall.DefaultTargets.Call("SomeFunction");
+            Vcall.DefaultProxy.Call("SomeFunction");
         }
 
         [Test]
         public void CallFoo_should_invoke_remote_Foo()
         {
-            var vtarget = Vcall.GetTargets();
-            vtarget.Call("Foo");
+            var vproxy = Vcall.NewProxy();
+            vproxy.Call("Foo");
         }
     }
 }

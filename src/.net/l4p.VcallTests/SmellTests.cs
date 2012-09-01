@@ -34,10 +34,10 @@ namespace l4p.VcallTests
         public void LocalHostSingleFunction_should_call_a_function()
         {
             var vhost = Vcall.NewHosting();
-            var vtarget = Vcall.GetTargets();
+            var vproxy = Vcall.NewProxy();
 
-            vhost.AddTarget(Foo);
-            vtarget.Call(() => Foo());
+            vhost.Host(Foo);
+            vproxy.Call(() => Foo());
 
             Assert.That(_fooIsCalled, Is.True);
         }

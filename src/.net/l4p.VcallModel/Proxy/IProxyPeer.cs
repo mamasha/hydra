@@ -10,13 +10,13 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using l4p.VcallModel.Hosting;
 
-namespace l4p.VcallModel.Target
+namespace l4p.VcallModel.Proxy
 {
-    class TargetsPeerException : VcallModelException
+    class ProxyPeerException : VcallModelException
     {
-        public TargetsPeerException() { }
-        public TargetsPeerException(string message) : base(message) { }
-        public TargetsPeerException(string message, Exception inner) : base(message, inner) { }
+        public ProxyPeerException() { }
+        public ProxyPeerException(string message) : base(message) { }
+        public ProxyPeerException(string message, Exception inner) : base(message, inner) { }
     }
 
     [DataContract]
@@ -31,7 +31,7 @@ namespace l4p.VcallModel.Target
     }
 
     [ServiceContract]
-    interface ITargetsPeer
+    interface IProxyPeer
     {
         [OperationContract(IsOneWay = true)]
         void SubscribeHosting(HostingInfo info);

@@ -9,14 +9,15 @@ using System;
 using System.Diagnostics;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Manager;
-using l4p.VcallModel.Target;
+using l4p.VcallModel.Proxy;
 using l4p.VcallModel.Utils;
+
 
 namespace l4p.VcallModel.Hosting
 {
     class HostingPeer 
         : CommNode
-        , IHostingPeer, IVhosting
+        , IHostingPeer, IHosting
     {
         #region members
 
@@ -78,7 +79,7 @@ namespace l4p.VcallModel.Hosting
             catch (Exception ex)
             {
                 onError();
-                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+                throw Helpers.MakeNew<ProxyPeerException>(ex, _log, errFmt, args);
             }
         }
 
@@ -88,13 +89,13 @@ namespace l4p.VcallModel.Hosting
             catch (Exception ex)
             {
                 onError();
-                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+                throw Helpers.MakeNew<ProxyPeerException>(ex, _log, errFmt, args);
             }
         }
 
-        private void handle_targets_hello(string callbackUri)
+        private void handle_proxy_hello(string callbackUri)
         {
-            trace("hello from targets.{0}", callbackUri);
+            trace("hello from proxy.{0}", callbackUri);
 
             var myInfo = new HostingInfo
             {
@@ -104,39 +105,39 @@ namespace l4p.VcallModel.Hosting
                 HostName = Helpers.GetLocalhostFqdn()
             };
 
-            _thr.DoOnce(_config.SubscribeToTargets_RetryTimeout.Value, callbackUri,
-                () => subsribe_self_to_targets(callbackUri, myInfo), "subscribe hosting.{0} to {1}", _tag, callbackUri);
+            _thr.DoOnce(_config.SubscribeToProxy_RetryTimeout.Value, callbackUri,
+                () => subsribe_self_to_proxy(callbackUri, myInfo), "subscribe hosting.{0} to {1}", _tag, callbackUri);
         }
 
-        private void handle_targets_bye(string callbackUri)
+        private void handle_proxy_bye(string callbackUri)
         {
-            trace("bye from targets.{0}", callbackUri);
+            trace("bye from proxy.{0}", callbackUri);
 
             _thr.Cancel(callbackUri);
 
-            var info = _repo.FindTargets(callbackUri);
+            var info = _repo.FindProxy(callbackUri);
 
             if (info == null)
                 return;
 
-            _repo.RemoveTargets(info);
+            _repo.RemoveProxy(info);
 
-            trace("targets at '{0}' is dead (targets={1})", callbackUri, _repo.TargetsCount);
+            trace("proxy at '{0}' is dead (proxies={1})", callbackUri, _repo.ProxyCount);
         }
 
-        private void subsribe_self_to_targets(string callbackUri, HostingInfo myInfo)
+        private void subsribe_self_to_proxy(string callbackUri, HostingInfo myInfo)
         {
-            var targets = Proxies.TargetsPeer.New(callbackUri);
+            var proxy = Channels.ProxyPeer.New(callbackUri);
 
             try_catch(
-                () => targets.SubscribeHosting(myInfo),
-                () => ++_counters.Hosting_Error_SubscribeToTargets, "hosting.{0}: Failed to subscribe self at host '{1}'", _tag, callbackUri);
+                () => proxy.SubscribeHosting(myInfo),
+                () => ++_counters.Hosting_Error_SubscribeToProxy, "hosting.{0}: Failed to subscribe self at host '{1}'", _tag, callbackUri);
 
-            _counters.Hosting_Event_SubscribedToTargets++;
-            trace("subscribed to targets '{0}' (targets={1})", callbackUri, _repo.TargetsCount);
+            _counters.Hosting_Event_SubscribedToProxy++;
+            trace("subscribed to proxy at '{0}' (proxies={1})", callbackUri, _repo.ProxyCount);
         }
 
-        private void update_targets_peer(TargetsInfo info)
+        private void update_proxy_peer(ProxyInfo info)
         {
             // generate update messages
             int count = 0;
@@ -144,40 +145,40 @@ namespace l4p.VcallModel.Hosting
             trace("{0} update messages are generated", count);
         }
 
-        private void subscribe_targets(TargetsInfo info)
+        private void subscribe_proxy(ProxyInfo info)
         {
-            trace("Got a new targets.{0} at '{1}'", info.Tag, info.ListeningUri);
+            trace("Got a new proxy.{0} at '{1}'", info.Tag, info.ListeningUri);
 
-            if (_repo.HasTargets(info.Tag))
+            if (_repo.HasProxy(info.Tag))
             {
-                trace("targets.{0} at {1} is already registered", info.Tag, info.ListeningUri);
-                _counters.Hosting_Event_KnownTargets++;
+                trace("proxy.{0} at {1} is already registered", info.Tag, info.ListeningUri);
+                _counters.Hosting_Event_KnownProxy++;
                 return;
             }
 
-            info.Proxy = Proxies.TargetsPeer.New(info.ListeningUri);
+            info.Proxy = Channels.ProxyPeer.New(info.ListeningUri);
 
-            _repo.AddTargets(info);
-            _counters.Hosting_Event_NewTargets++;
+            _repo.AddProxy(info);
+            _counters.Hosting_Event_NewProxy++;
 
-            update_targets_peer(info);
+            update_proxy_peer(info);
         }
 
-        private void cancel_targets(string targetsTag)
+        private void cancel_proxy(string proxyTag)
         {
-            var info = _repo.FindTargets(targetsTag);
+            var info = _repo.FindProxy(proxyTag);
 
             if (info == null)
             {
-                trace("unknown targets.{0}", targetsTag);
-                _counters.Hosting_Event_UnknownTargets++;
+                trace("unknown proxy.{0}", proxyTag);
+                _counters.Hosting_Event_UnknownProxy++;
                 return;
             }
 
-            _repo.RemoveTargets(info);
-            _counters.Hosting_Event_CanceledTargets++;
+            _repo.RemoveProxy(info);
+            _counters.Hosting_Event_CanceledProxy++;
 
-            trace("targets.{0} is canceled", targetsTag);
+            trace("proxy.{0} is canceled", proxyTag);
         }
 
         private void stop(TimeSpan timeout, IDoneEvent observer)
@@ -193,24 +194,24 @@ namespace l4p.VcallModel.Hosting
 
             _state = State.Stopped;
 
-            var targets = _repo.GetTargets();
+            var proxies = _repo.GetProxies();
 
-            foreach (var target in targets)
+            foreach (var proxy in proxies)
             {
-                _thr.Cancel(target.Tag);
-                _repo.RemoveTargets(target);
+                _thr.Cancel(proxy.Tag);
+                _repo.RemoveProxy(proxy);
 
                 try
                 {
-                    target.Proxy.CancelHosting(_tag);
+                    proxy.Proxy.CancelHosting(_tag);
                 }
                 catch (Exception ex)
                 {
-                    warn("Failed to cancel targets.{0} gracefully; {1}", target.Tag, ex.GetDetailedMessage());
+                    warn("Failed to cancel proxy.{0} gracefully; {1}", proxy.Tag, ex.GetDetailedMessage());
                 }
             }
 
-            trace("stopping... all targets are notified (int {0} msecs)", timer.ElapsedMilliseconds);
+            trace("stopping... all proxies are notified (int {0} msecs)", timer.ElapsedMilliseconds);
 
             _thr.CancelAll();
 
@@ -246,25 +247,25 @@ namespace l4p.VcallModel.Hosting
             get { return _tag; }
         }
 
-        public void OnTargetsDiscovery(string callbackUri, string role, bool alive)
+        public void OnProxyDiscovery(string callbackUri, string role, bool alive)
             // discovery thread
         {
-            if (role != _config.TargetsRole)
+            if (role != _config.ProxyRole)
                 return;
 
             if (alive)
             {
                 _thr.PostAction(
-                    () => handle_targets_hello(callbackUri), "handling hello from {0}.{1}", role, callbackUri);
+                    () => handle_proxy_hello(callbackUri), "handling hello from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_HelloFromTargets++;
+                _counters.Hosting_Event_HelloFromProxy++;
             }
             else
             {
                 _thr.PostAction(
-                    () => handle_targets_bye(callbackUri), "handling bye from {0}.{1}", role, callbackUri);
+                    () => handle_proxy_bye(callbackUri), "handling bye from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_ByeFromTargets++;
+                _counters.Hosting_Event_ByeFromProxy++;
             }
         }
 
@@ -277,18 +278,18 @@ namespace l4p.VcallModel.Hosting
 
         #region IHostingPeer
 
-        void IHostingPeer.SubscribeTargets(TargetsInfo info)
+        void IHostingPeer.SubscribeProxy(ProxyInfo info)
             // one way message; arbitrary WCF thread
         {
             _thr.PostAction(
-                () => subscribe_targets(info), "Sibscribing targets.{0} peer at '{1}'", info.Tag, info.ListeningUri);
+                () => subscribe_proxy(info), "Sibscribing proxy.{0} peer at '{1}'", info.Tag, info.ListeningUri);
         }
 
-        void IHostingPeer.CancelTargets(string targetsTag)
+        void IHostingPeer.CancelProxy(string proxyTag)
             // one way message; arbitrary WCF thread
         {
             _thr.PostAction(
-                () => cancel_targets(targetsTag), "Canceling targets.{0}", targetsTag);
+                () => cancel_proxy(proxyTag), "Canceling proxy.{0}", proxyTag);
         }
 
         #endregion
@@ -309,51 +310,51 @@ namespace l4p.VcallModel.Hosting
 
         #endregion
 
-        #region IVhosting
+        #region IHosting
 
-        void IVhosting.AddTarget(Action target)
+        void IHosting.Host(Action action)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVhosting.AddTarget<R>(Func<R> target)
+        void IHosting.Host<R>(Func<R> func)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVhosting.AddTarget<T1, T2>(string targetName, Action<T1, T2> target)
+        void IHosting.Host<T1, T2>(string actionName, Action<T1, T2> action)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        R IVhosting.AddTarget<T1, T2, R>(string targetName, Func<T1, T2, R> target)
+        R IHosting.Host<T1, T2, R>(string funcName, Func<T1, T2, R> func)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVhosting.AddTarget<T1, T2>(Action<T1, T2> target)
+        void IHosting.Host<T1, T2>(Action<T1, T2> action)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVhosting.AddTarget<T1, R>(Func<T1, R> target)
+        void IHosting.Host<T1, R>(Func<T1, R> func)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVhosting.AddTarget<T1, T2, R>(Func<T1, T2, R> target)
+        void IHosting.Host<T1, T2, R>(Func<T1, T2, R> func)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        string IVhosting.ListeningUri
+        string IHosting.ListeningUri
         {
             get { return _listeningUri; }
         }

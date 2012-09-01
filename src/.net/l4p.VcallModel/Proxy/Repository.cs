@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Target
+namespace l4p.VcallModel.Proxy
 {
     interface IRepository
     {
@@ -24,7 +22,7 @@ namespace l4p.VcallModel.Target
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<TargetsPeer>();
+        private static readonly ILogger _log = Logger.New<ProxyPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private readonly IDictionary<string, HostingInfo> _hostings;
@@ -79,7 +77,7 @@ namespace l4p.VcallModel.Target
         void IRepository.AddHosting(HostingInfo info)
         {
             _hostings[info.Tag] = info;
-            _counters.Targets_State_AliveHostings++;
+            _counters.Proxy_State_AliveHostings++;
         }
 
         void IRepository.RemoveHosting(HostingInfo info)
@@ -87,7 +85,7 @@ namespace l4p.VcallModel.Target
             bool wasThere = _hostings.Remove(info.Tag);
 
             if (wasThere)
-                _counters.Targets_State_AliveHostings--;
+                _counters.Proxy_State_AliveHostings--;
         }
 
         HostingInfo IRepository.FindHosting(string tag)
@@ -103,7 +101,7 @@ namespace l4p.VcallModel.Target
             if (hosting == null)
             {
                 throw
-                    Helpers.MakeNew<TargetsPeerException>(null, _log, "Can't find hosting.{0}", tag);
+                    Helpers.MakeNew<ProxyPeerException>(null, _log, "Can't find hosting.{0}", tag);
             }
 
             return hosting;

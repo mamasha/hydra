@@ -13,22 +13,22 @@ using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Manager;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Target
+namespace l4p.VcallModel.Proxy
 {
-    class TargetsPeer 
+    class ProxyPeer 
         : CommNode
-        , ITargetsPeer, IVtarget
+        , IProxyPeer, IProxy
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<TargetsPeer>();
+        private static readonly ILogger _log = Logger.New<ProxyPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private readonly TargetConfiguration _config;
+        private readonly ProxyConfiguration _config;
         private readonly IVcallSubsystem _core;
         private readonly IRepository _repo;
 
-        private readonly IWcfTarget _wcf;
+        private readonly IWcfProxy _wcf;
         private readonly IActiveThread _thr;
 
         private string _listeningUri;
@@ -37,16 +37,16 @@ namespace l4p.VcallModel.Target
 
         #region construction
 
-        public TargetsPeer(TargetConfiguration config, VcallSubsystem core)
+        public ProxyPeer(ProxyConfiguration config, VcallSubsystem core)
         {
             _config = config;
             _core = core;
             _repo = Repository.New();
-            _wcf = new WcfTarget(this);
+            _wcf = new WcfProxy(this);
 
             var thrConfig = new ActiveThread.Config
             {
-                Name = String.Format("targets.{0}", _tag),
+                Name = String.Format("proxy.{0}", _tag),
                 DurableTimeToLive = core.Config.Timeouts.ActiveThread_DurableTimeToLive,
                 StartTimeout = core.Config.Timeouts.ActiveThread_Start,
                 StopTimeout = core.Config.Timeouts.ActiveThread_Stop,
@@ -66,13 +66,13 @@ namespace l4p.VcallModel.Target
                 return;
 
             string msg = Helpers.SafeFormat(format, args);
-            _log.Trace("targets.{0}: {1}", _tag, msg);
+            _log.Trace("proxy.{0}: {1}", _tag, msg);
         }
 
         private void warn(string format, params object[] args)
         {
             string msg = Helpers.SafeFormat(format, args);
-            _log.Warn("targets.{0}: {1}", _tag, msg);
+            _log.Warn("proxy.{0}: {1}", _tag, msg);
         }
 
         private void try_catch(Action action, Action onError, string errFmt, params object[] args)
@@ -81,7 +81,7 @@ namespace l4p.VcallModel.Target
             catch (Exception ex)
             {
                 onError();
-                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+                throw Helpers.MakeNew<ProxyPeerException>(ex, _log, errFmt, args);
             }
         }
 
@@ -91,19 +91,19 @@ namespace l4p.VcallModel.Target
             catch (Exception ex)
             {
                 onError();
-                throw Helpers.MakeNew<TargetsPeerException>(ex, _log, errFmt, args);
+                throw Helpers.MakeNew<ProxyPeerException>(ex, _log, errFmt, args);
             }
         }
 
-        private void subsribe_self_to_hosting(string callbackUri, TargetsInfo myInfo)
+        private void subsribe_self_to_hosting(string callbackUri, ProxyInfo myInfo)
         {
-            var hosting = Proxies.HostingPeer.New(callbackUri);
+            var hosting = Channels.HostingPeer.New(callbackUri);
 
             try_catch(
-                () => hosting.SubscribeTargets(myInfo),
-                () => ++_counters.Targets_Error_SubscribeToHosting, "targets.{0}: Failed to register self at host '{1}'", _tag, callbackUri);
+                () => hosting.SubscribeProxy(myInfo),
+                () => ++_counters.Proxy_Error_SubscribeToHosting, "proxy.{0}: Failed to register self at host '{1}'", _tag, callbackUri);
 
-            _counters.Targets_Event_SubscribedToHosting++;
+            _counters.Proxy_Event_SubscribedToHosting++;
             trace("subscribed to host '{0}' (hosts={1})", callbackUri, _repo.HostingCount);
         }
 
@@ -111,7 +111,7 @@ namespace l4p.VcallModel.Target
         {
             trace("hello from hosting.{0}", callbackUri);
 
-            var myInfo = new TargetsInfo
+            var myInfo = new ProxyInfo
             {
                 Tag = _tag,
                 ListeningUri = _listeningUri,
@@ -120,7 +120,7 @@ namespace l4p.VcallModel.Target
             };
 
             _thr.DoOnce(_config.SubscribeToHosting_RetryTimeout.Value, callbackUri,
-                () => subsribe_self_to_hosting(callbackUri, myInfo), "subscribe targets.{0} to {1}", _tag, callbackUri);
+                () => subsribe_self_to_hosting(callbackUri, myInfo), "subscribe proxy.{0} to {1}", _tag, callbackUri);
         }
 
         private void handle_hosting_bye(string callbackUri)
@@ -146,14 +146,14 @@ namespace l4p.VcallModel.Target
             if (_repo.HasHosting(info.Tag))
             {
                 trace("hosting.{0} at {1} is already registered", info.Tag, info.CallbackUri);
-                _counters.Targets_Event_KnownHosting++;
+                _counters.Proxy_Event_KnownHosting++;
                 return;
             }
 
-            info.Proxy = Proxies.HostingPeer.New(info.CallbackUri);
+            info.Proxy = Channels.HostingPeer.New(info.CallbackUri);
 
             _repo.AddHosting(info);
-            _counters.Targets_Event_NewHosting++;
+            _counters.Proxy_Event_NewHosting++;
         }
 
         private void cancel_hosting(string hostingTag)
@@ -163,12 +163,12 @@ namespace l4p.VcallModel.Target
             if (info == null)
             {
                 trace("unknown hosting.{0}", hostingTag);
-                _counters.Targets_Event_UnknownHosting++;
+                _counters.Proxy_Event_UnknownHosting++;
                 return;
             }
 
             _repo.RemoveHosting(info);
-            _counters.Targets_Event_CanceledHosting++;
+            _counters.Proxy_Event_CanceledHosting++;
 
             trace("hosting.{0} is canceled", hostingTag);
         }
@@ -180,7 +180,7 @@ namespace l4p.VcallModel.Target
 
             if (_state == State.Stopped)
             {
-                _counters.Targets_Event_IsAlreadyStopped++;
+                _counters.Proxy_Event_IsAlreadyStopped++;
                 return;
             }
 
@@ -195,7 +195,7 @@ namespace l4p.VcallModel.Target
 
                 try
                 {
-                    hosting.Proxy.CancelTargets(_tag);
+                    hosting.Proxy.CancelProxy(_tag);
                 }
                 catch (Exception ex)
                 {
@@ -203,7 +203,7 @@ namespace l4p.VcallModel.Target
                 }
             }
 
-            trace("stopping... all targets are notified (in {0} msecs)", timer.ElapsedMilliseconds);
+            trace("stopping... all proxies are notified (in {0} msecs)", timer.ElapsedMilliseconds);
 
             _thr.CancelAll();
 
@@ -211,9 +211,9 @@ namespace l4p.VcallModel.Target
             trace("stopping... wcf peers are stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
             _thr.SetStopSignal();
-            _counters.Targets_Event_IsStopped++;
+            _counters.Proxy_Event_IsStopped++;
 
-            trace("targets is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
+            trace("proxy is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
             observer.Signal();
         }
@@ -228,12 +228,12 @@ namespace l4p.VcallModel.Target
 
             _listeningUri = Helpers.TryCatch(_log,
                 () => _wcf.Start(uri, timeout),
-                ex => Helpers.ThrowNew<HostingPeerException>(ex, _log, "Failed to start targets.{0} at '{1}'", _tag, uri));
+                ex => Helpers.ThrowNew<HostingPeerException>(ex, _log, "Failed to start proxy.{0} at '{1}'", _tag, uri));
 
             _thr.Start();
 
             _state = State.Started;
-            _counters.Targets_Event_IsStarted++;
+            _counters.Proxy_Event_IsStarted++;
         }
 
         public string Tag
@@ -252,14 +252,14 @@ namespace l4p.VcallModel.Target
                 _thr.PostAction(
                     () => handle_hosting_hello(callbackUri), "handle hello from {0}.{1}", role, callbackUri);
 
-                _counters.Targets_Event_HelloFromHosting++;
+                _counters.Proxy_Event_HelloFromHosting++;
             }
             else
             {
                 _thr.PostAction(
                     () => handle_hosting_bye(callbackUri), "handle bye from {0}.{1}", role, callbackUri);
 
-                _counters.Targets_Event_ByeFromHosting++;
+                _counters.Proxy_Event_ByeFromHosting++;
             }
         }
 
@@ -286,16 +286,16 @@ namespace l4p.VcallModel.Target
 
         #endregion
 
-        #region ITargetsPeer
+        #region IProxyPeer
 
-        void ITargetsPeer.SubscribeHosting(HostingInfo info)
+        void IProxyPeer.SubscribeHosting(HostingInfo info)
             // one way message; arbitrary WCF thread
         {
             _thr.PostAction(
                 () => subscribe_hosting(info), "Sibscribing hosting.{0} peer at '{1}'", info.Tag, info.CallbackUri);
         }
 
-        void ITargetsPeer.CancelHosting(string hostingTag)
+        void IProxyPeer.CancelHosting(string hostingTag)
             // one way message; arbitrary WCF thread
         {
             _thr.PostAction(
@@ -304,30 +304,30 @@ namespace l4p.VcallModel.Target
 
         #endregion
 
-        #region IVtarget
+        #region IProxy
 
-        void IVtarget.Call(Expression<Action> vcall)
+        void IProxy.Call(Expression<Action> vcall)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        R IVtarget.Call<R>(Expression<Func<R>> vcall)
+        R IProxy.Call<R>(Expression<Func<R>> vcall)
         {
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        void IVtarget.Call(string methodName, params object[] args)
+        void IProxy.Call(string methodName, params object[] args)
         {
             throw
-                Helpers.MakeNew<VcallException>(null, _log, "'{0}' There is no registered targets for subject '{1}'", "resolving key", methodName);
+                Helpers.MakeNew<VcallException>(null, _log, "'{0}' There is no registered proxies for subject '{1}'", "resolving key", methodName);
 
             throw
                 Helpers.NewNotImplementedException();
         }
 
-        R IVtarget.Call<R>(string functionName, params object[] args)
+        R IProxy.Call<R>(string functionName, params object[] args)
         {
             throw
                 Helpers.NewNotImplementedException();

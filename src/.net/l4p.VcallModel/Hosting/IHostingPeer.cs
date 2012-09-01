@@ -8,8 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Runtime.Serialization;
 using System.ServiceModel;
-using l4p.VcallModel.Target;
-using l4p.VcallModel.Target.Proxies;
+using l4p.VcallModel.Proxy;
 
 namespace l4p.VcallModel.Hosting
 {
@@ -21,23 +20,23 @@ namespace l4p.VcallModel.Hosting
     }
 
     [DataContract]
-    class TargetsInfo
+    class ProxyInfo
     {
         [DataMember] public string Tag { get; set; }
         [DataMember] public string ListeningUri { get; set; }
         [DataMember] public string NameSpace { get; set; }
         [DataMember] public string HostName { get; set; }
 
-        public ITargetsPeer Proxy { get; set; }
+        public IProxyPeer Proxy { get; set; }
     }
 
     [ServiceContract]
     interface IHostingPeer
     {
         [OperationContract(IsOneWay = true)]
-        void SubscribeTargets(TargetsInfo info);
+        void SubscribeProxy(ProxyInfo info);
 
         [OperationContract(IsOneWay = true)]
-        void CancelTargets(string targetsTag);
+        void CancelProxy(string proxyTag);
     }
 }

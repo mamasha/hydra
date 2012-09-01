@@ -2,12 +2,12 @@
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Target;
+using l4p.VcallModel.Proxy;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Hosting.Proxies
+namespace l4p.VcallModel.Hosting.Channels
 {
-    class TargetsPeer : ITargetsPeer
+    class ProxyPeer : IProxyPeer
     {
         #region members
 
@@ -15,7 +15,7 @@ namespace l4p.VcallModel.Hosting.Proxies
         private readonly Object _mutex;
         private readonly DebugCounters _counters;
 
-        private ITargetsPeer _channel;
+        private IProxyPeer _channel;
 
         #endregion
 
@@ -48,7 +48,7 @@ namespace l4p.VcallModel.Hosting.Proxies
                 _channel = null;
 
                 lock (_mutex)
-                    _counters.Hosting_Error_TargetsCalls++;
+                    _counters.Hosting_Error_ProxyCalls++;
 
                 throw;
             }
@@ -58,13 +58,13 @@ namespace l4p.VcallModel.Hosting.Proxies
 
         #region construction
 
-        public static ITargetsPeer New(string uri)
+        public static IProxyPeer New(string uri)
         {
             return
-                new TargetsPeer(uri);
+                new ProxyPeer(uri);
         }
 
-        private TargetsPeer(string uri)
+        private ProxyPeer(string uri)
         {
             _uri = uri;
             _mutex = new Object();
@@ -75,17 +75,17 @@ namespace l4p.VcallModel.Hosting.Proxies
 
         #endregion
 
-        void ITargetsPeer.SubscribeHosting(HostingInfo info) { call(() => _channel.SubscribeHosting(info)); }
-        void ITargetsPeer.CancelHosting(string hostingTag) { call(() => _channel.CancelHosting(hostingTag)); }
+        void IProxyPeer.SubscribeHosting(HostingInfo info) { call(() => _channel.SubscribeHosting(info)); }
+        void IProxyPeer.CancelHosting(string hostingTag) { call(() => _channel.CancelHosting(hostingTag)); }
     }
 
-    class WcfChannel : ClientBase<ITargetsPeer>, ITargetsPeer
+    class WcfChannel : ClientBase<IProxyPeer>, IProxyPeer
     {
         public WcfChannel(Binding binding, EndpointAddress epoint) :
             base(binding, epoint)
         { }
 
-        void ITargetsPeer.SubscribeHosting(HostingInfo info) { Channel.SubscribeHosting(info); }
-        void ITargetsPeer.CancelHosting(string hostingTag) { Channel.CancelHosting(hostingTag); }
+        void IProxyPeer.SubscribeHosting(HostingInfo info) { Channel.SubscribeHosting(info); }
+        void IProxyPeer.CancelHosting(string hostingTag) { Channel.CancelHosting(hostingTag); }
     }
 }

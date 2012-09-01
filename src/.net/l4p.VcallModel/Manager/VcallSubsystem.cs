@@ -11,7 +11,7 @@ using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
 using l4p.VcallModel.Hosting;
-using l4p.VcallModel.Target;
+using l4p.VcallModel.Proxy;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Manager
@@ -23,8 +23,8 @@ namespace l4p.VcallModel.Manager
         void Start();
         void Stop();
 
-        IVhosting NewHosting(HostingConfiguration config = null);
-        IVtarget NewTargets(TargetConfiguration config = null);
+        IHosting NewHosting(HostingConfiguration config = null);
+        IProxy NewProxy(ProxyConfiguration config = null);
 
         void Close(ICommNode node);
 
@@ -172,15 +172,15 @@ namespace l4p.VcallModel.Manager
             _self.resolver.Stop();
         }
 
-        IVhosting IVcallSubsystem.NewHosting(HostingConfiguration config)
+        IHosting IVcallSubsystem.NewHosting(HostingConfiguration config)
             // user arbitrary thread
         {
             if (config == null)
                 config = new HostingConfiguration();
 
-            if (config.TargetsRole == null) config.TargetsRole = _self.vconfig.TargetsRole;
+            if (config.ProxyRole == null) config.ProxyRole = _self.vconfig.ProxyRole;
             if (config.HostingRole == null) config.HostingRole = _self.vconfig.HostingRole;
-            if (config.SubscribeToTargets_RetryTimeout == null) config.SubscribeToTargets_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscriptionRetry;
+            if (config.SubscribeToProxy_RetryTimeout == null) config.SubscribeToProxy_RetryTimeout = _self.vconfig.Timeouts.ProxyHostingSubscriptionRetry;
 
             HostingPeer hosting;
 
@@ -192,7 +192,7 @@ namespace l4p.VcallModel.Manager
             string callbackUri = hosting.ListeningUri;
 
             _self.resolver.Publish(callbackUri, config.HostingRole, hosting.Tag);
-            _self.resolver.Subscribe(hosting.OnTargetsDiscovery, hosting.Tag);
+            _self.resolver.Subscribe(hosting.OnProxyDiscovery, hosting.Tag);
 
             lock (_self.mutex)
             {
@@ -205,38 +205,38 @@ namespace l4p.VcallModel.Manager
             return hosting;
         }
 
-        IVtarget IVcallSubsystem.NewTargets(TargetConfiguration config)
+        IProxy IVcallSubsystem.NewProxy(ProxyConfiguration config)
             // user arbitrary thread
         {
             if (config == null)
-                config = new TargetConfiguration();
+                config = new ProxyConfiguration();
 
-            if (config.TargetsRole == null) config.TargetsRole = _self.vconfig.TargetsRole;
+            if (config.ProxyRole == null) config.ProxyRole = _self.vconfig.ProxyRole;
             if (config.HostingRole == null) config.HostingRole = _self.vconfig.HostingRole;
             if (config.NonRegisteredCall == NonRegisteredCallPolicy.Default) config.NonRegisteredCall = _self.vconfig.NonRegisteredCall;
-            if (config.SubscribeToHosting_RetryTimeout == null) config.SubscribeToHosting_RetryTimeout = _self.vconfig.Timeouts.TargetsHostingSubscriptionRetry;
+            if (config.SubscribeToHosting_RetryTimeout == null) config.SubscribeToHosting_RetryTimeout = _self.vconfig.Timeouts.ProxyHostingSubscriptionRetry;
 
-            TargetsPeer targets;
+            ProxyPeer proxy;
 
             using (Context.With(_countersDb))
             {
-                targets = _engine.NewTargets(config, this);
+                proxy = _engine.NewProxy(config, this);
             }
 
-            string callbackUri = targets.ListeningUri;
+            string callbackUri = proxy.ListeningUri;
 
-            _self.resolver.Publish(callbackUri, config.TargetsRole, targets.Tag);
-            _self.resolver.Subscribe(targets.OnHostingDiscovery, targets.Tag);
+            _self.resolver.Publish(callbackUri, config.ProxyRole, proxy.Tag);
+            _self.resolver.Subscribe(proxy.OnHostingDiscovery, proxy.Tag);
 
             lock (_self.mutex)
             {
-                _self.repo.Add(targets);
-                _self.counters.Vcall_Event_NewTargets++;
+                _self.repo.Add(proxy);
+                _self.counters.Vcall_Event_NewProxy++;
             }
 
-            trace("targets.{0} is started", targets.Tag);
+            trace("proxy.{0} is started", proxy.Tag);
 
-            return targets;
+            return proxy;
         }
 
         void IVcallSubsystem.Close(ICommNode node)

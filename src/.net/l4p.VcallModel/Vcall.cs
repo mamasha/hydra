@@ -30,8 +30,8 @@ namespace l4p.VcallModel
         private static readonly object _startMutex = new Object();
 
         private static IVcallSubsystem _core;
-        private static IVhosting _defaultHosting;
-        private static IVtarget _defaultTarget;
+        private static IHosting _defaultHosting;
+        private static IProxy _defaultProxy;
 
         #endregion
 
@@ -68,7 +68,7 @@ namespace l4p.VcallModel
 
             _core = core;
             _defaultHosting = null;
-            _defaultTarget = null;
+            _defaultProxy = null;
 
             _log.Info("Vcall services are started");
         }
@@ -79,11 +79,11 @@ namespace l4p.VcallModel
                 return;
 
             var defaultHosting = _defaultHosting;
-            var defaultTarget = _defaultTarget;
+            var defaultProxy = _defaultProxy;
             var core = _core;
 
             _defaultHosting = null;
-            _defaultTarget = null;
+            _defaultProxy = null;
             _core = null;
 
             try
@@ -91,8 +91,8 @@ namespace l4p.VcallModel
                 if (defaultHosting != null)
                     _core.Close(defaultHosting);
 
-                if (defaultTarget != null)
-                    _core.Close(defaultTarget);
+                if (defaultProxy != null)
+                    _core.Close(defaultProxy);
 
                 Helpers.TryCatch(_log,
                     () => core.Stop(),
@@ -106,7 +106,7 @@ namespace l4p.VcallModel
             _log.Info("Vcall services are stopped");
         }
 
-        private static IVhosting new_hosting(HostingConfiguration config)
+        private static IHosting new_hosting(HostingConfiguration config)
         {
             try
             {
@@ -120,21 +120,21 @@ namespace l4p.VcallModel
             }
         }
 
-        private static IVtarget new_target(TargetConfiguration config)
+        private static IProxy new_proxy(ProxyConfiguration config)
         {
             try
             {
                 return
-                    _core.NewTargets(config);
+                    _core.NewProxy(config);
             }
             catch (Exception ex)
             {
                 throw
-                    Helpers.MakeNew<VcallException>(ex, _log, "Failed to create target");
+                    Helpers.MakeNew<VcallException>(ex, _log, "Failed to create proxy");
             }
         }
 
-        private static IVhosting get_default_hosting()
+        private static IHosting get_default_hosting()
         {
             if (_defaultHosting != null)
                 return _defaultHosting;
@@ -144,14 +144,14 @@ namespace l4p.VcallModel
             return _defaultHosting;
         }
 
-        private static IVtarget get_default_target()
+        private static IProxy get_default_proxy()
         {
-            if (_defaultTarget == null)
-                return _defaultTarget;
+            if (_defaultProxy == null)
+                return _defaultProxy;
 
-            _defaultTarget = new_target(new TargetConfiguration());
+            _defaultProxy = new_proxy(new ProxyConfiguration());
 
-            return _defaultTarget;
+            return _defaultProxy;
         }
         #endregion
 
@@ -228,8 +228,8 @@ namespace l4p.VcallModel
         }
 
         /// <summary>
-        /// Get default target model </summary>
-        public static IVtarget DefaultTargets
+        /// Get default proxy </summary>
+        public static IProxy DefaultProxy
         {
             get
             {
@@ -238,14 +238,14 @@ namespace l4p.VcallModel
                 lock (_startMutex)
                 {
                     return
-                        get_default_target();
+                        get_default_proxy();
                 }
             }
         }
 
         /// <summary>
         /// Get default hosting ... </summary>
-        public static IVhosting DefaultHosting
+        public static IHosting DefaultHosting
         {
             get
             {
@@ -262,7 +262,7 @@ namespace l4p.VcallModel
         /// <summary>
         /// Create new hosting model with default parameters ... </summary>
         /// <returns>New active hosting that is ready to host functions</returns>
-        public static IVhosting NewHosting()
+        public static IHosting NewHosting()
         {
             assert_services_are_started();
             return
@@ -273,7 +273,7 @@ namespace l4p.VcallModel
         /// Create new hosting model with default parameters ... </summary>
         /// <param name="visibilityScope">Hosting visibility scope (usually local host or resolving domain)</param>
         /// <returns>New active hosting that is ready to host functions</returns>
-        public static IVhosting NewHosting(HostingVisibilityScope visibilityScope)
+        public static IHosting NewHosting(HostingVisibilityScope visibilityScope)
         {
             assert_services_are_started();
             var config = new HostingConfiguration { VisibilityScope = visibilityScope };
@@ -285,7 +285,7 @@ namespace l4p.VcallModel
         /// Create new hosting model with default parameters ... </summary>
         /// <param name="namespace">A namespace for functions hosted by a returned hosting</param>
         /// <returns>New active hosting that is ready to host functions</returns>
-        public static IVhosting NewHosting(string @namespace)
+        public static IHosting NewHosting(string @namespace)
         {
             assert_services_are_started();
             var config = new HostingConfiguration { NameSpace = @namespace };
@@ -297,7 +297,7 @@ namespace l4p.VcallModel
         /// Create custom hosting model</summary>
         /// <param name="config">Custom parameters</param>
         /// <returns>New hosting with custom parameters</returns>
-        public static IVhosting NewHosting(HostingConfiguration config)
+        public static IHosting NewHosting(HostingConfiguration config)
         {
             assert_services_are_started();
             return
@@ -305,35 +305,35 @@ namespace l4p.VcallModel
         }
 
         /// <summary>
-        /// Create new target model with default parameters ...</summary>
+        /// Create new proxy with default configuration ...</summary>
         /// <returns>A new proxy on which v-calls are issued</returns>
-        public static IVtarget GetTargets()
+        public static IProxy NewProxy()
         {
             assert_services_are_started();
             return
-                _core.NewTargets(new TargetConfiguration());
+                _core.NewProxy(new ProxyConfiguration());
         }
 
         /// <summary>
-        /// Create new target model with default parameters ...</summary>
+        /// Create new proxy model with default configuration ...</summary>
         /// <param name="namespace">Restrict v-calls resolving to a specific namespace</param>
         /// <returns>A new proxy on which v-calls are issued</returns>
-        public static IVtarget GetTargets(string @namespace)
+        public static IProxy NewProxy(string @namespace)
         {
             assert_services_are_started();
             return
-                _core.NewTargets(new TargetConfiguration { NameSpace = @namespace });
+                _core.NewProxy(new ProxyConfiguration { NameSpace = @namespace });
         }
 
         /// <summary>
-        /// Create new custom target model</summary>
+        /// Create new proxy with custom configuration</summary>
         /// <param name="config">Costomization parameters</param>
         /// <returns>A new proxy on which v-calls are issued</returns>
-        public static IVtarget GetTargets(TargetConfiguration config)
+        public static IProxy NewProxy(ProxyConfiguration config)
         {
                 assert_services_are_started();
                 return
-                    new_target(config);
+                    new_proxy(config);
         }
 
         /// <summary>

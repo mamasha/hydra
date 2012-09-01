@@ -1,9 +1,6 @@
-﻿using System;
-using System.ServiceModel;
-using l4p.VcallModel.Target;
-using l4p.VcallModel.Utils;
+﻿using System.ServiceModel;
 
-namespace l4p.VcallModel.Hosting.Proxies
+namespace l4p.VcallModel.Hosting.Channels
 {
     class ContextualHost : ServiceHost
     {
@@ -26,8 +23,8 @@ namespace l4p.VcallModel.Hosting.Proxies
                 }
             }
 
-            void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
-            void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
+            void IHostingPeer.SubscribeProxy(ProxyInfo info) { Channel.SubscribeProxy(info); }
+            void IHostingPeer.CancelProxy(string proxyTag) { Channel.CancelProxy(proxyTag); }
         }
     }
 }

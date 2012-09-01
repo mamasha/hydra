@@ -119,7 +119,7 @@ namespace l4p.VcallTests.StubsHosting
             Vcall.StartServices(vconfig);
 
             Vcall.NewHosting();
-            Vcall.GetTargets();
+            Vcall.NewProxy();
 
             Console.WriteLine();
             Console.WriteLine("Hosting is running (discovery is on)");

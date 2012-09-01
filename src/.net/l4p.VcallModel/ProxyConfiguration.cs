@@ -14,17 +14,17 @@ namespace l4p.VcallModel
         IgnoreCall
     }
 
-    public class TargetConfiguration
+    public class ProxyConfiguration
     {
         /// <summary>
-        /// A namespace of v-calls targets</summary>
+        /// A namespace of v-calls proxies</summary>
         public string NameSpace { get; set; }
 
         /// <summary>
         /// TCP port to connect to  </summary>
         public int? Port { get; set; }
 
-        public string TargetsRole { get; set; }
+        public string ProxyRole { get; set; }
         public string HostingRole { get; set; }
         public NonRegisteredCallPolicy NonRegisteredCall { get; set; }
 

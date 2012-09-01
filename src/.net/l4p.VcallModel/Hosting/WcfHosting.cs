@@ -7,7 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
-using l4p.VcallModel.Target;
+using l4p.VcallModel.Hosting.Channels;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
@@ -41,7 +41,7 @@ namespace l4p.VcallModel.Hosting
         public WcfHosting(IHostingPeer peer)
         {
             Helpers.TryCatch(_log,
-                () => _host = new Proxies.ContextualHost(peer),
+                () => _host = new ContextualHost(peer),
                 ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
         }
 

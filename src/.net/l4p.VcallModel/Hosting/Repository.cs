@@ -9,22 +9,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Target;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Hosting
 {
     interface IRepository
     {
-        int TargetsCount { get; }
-        bool HasTargets(string tag);
+        int ProxyCount { get; }
+        bool HasProxy(string tag);
 
-        void AddTargets(TargetsInfo info);
-        void RemoveTargets(TargetsInfo info);
+        void AddProxy(ProxyInfo info);
+        void RemoveProxy(ProxyInfo info);
 
-        TargetsInfo FindTargets(string tag);
-        TargetsInfo GetTargets(string tag);
-        TargetsInfo[] GetTargets();
+        ProxyInfo FindProxy(string tag);
+        ProxyInfo GetProxy(string tag);
+        ProxyInfo[] GetProxies();
     }
 
     class Repository : IRepository
@@ -34,7 +33,7 @@ namespace l4p.VcallModel.Hosting
         private static readonly ILogger _log = Logger.New<HostingPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private readonly IDictionary<string, TargetsInfo> _targets;
+        private readonly IDictionary<string, ProxyInfo> _proxies;
         private readonly DebugCounters _counters;
 
         #endregion
@@ -49,7 +48,7 @@ namespace l4p.VcallModel.Hosting
 
         private Repository()
         {
-            _targets = new Dictionary<string, TargetsInfo>();
+            _proxies = new Dictionary<string, ProxyInfo>();
             _counters = Context.Get<ICountersDb>().NewCounters();
         }
 
@@ -57,69 +56,69 @@ namespace l4p.VcallModel.Hosting
 
         #region private
 
-        private TargetsInfo find_targets(string tag)
+        private ProxyInfo find_proxy(string tag)
         {
-            var targets =
-                from target in _targets.Values
-                where target.Tag == tag || target.ListeningUri == tag
-                select target;
+            var proxies =
+                from proxy in _proxies.Values
+                where proxy.Tag == tag || proxy.ListeningUri == tag
+                select proxy;
 
             return
-                targets.FirstOrDefault();
+                proxies.FirstOrDefault();
         }
 
         #endregion
 
         #region IRepository
 
-        int IRepository.TargetsCount
+        int IRepository.ProxyCount
         {
-            get { return _targets.Count; }
+            get { return _proxies.Count; }
         }
 
-        bool IRepository.HasTargets(string tag)
+        bool IRepository.HasProxy(string tag)
         {
             return
-                _targets.ContainsKey(tag);
+                _proxies.ContainsKey(tag);
         }
 
-        void IRepository.AddTargets(TargetsInfo info)
+        void IRepository.AddProxy(ProxyInfo info)
         {
-            _targets[info.Tag] = info;
-            _counters.Hosting_State_AliveTargets++;
+            _proxies[info.Tag] = info;
+            _counters.Hosting_State_AliveProxies++;
         }
 
-        void IRepository.RemoveTargets(TargetsInfo info)
+        void IRepository.RemoveProxy(ProxyInfo info)
         {
-            bool wasThere = _targets.Remove(info.Tag);
+            bool wasThere = _proxies.Remove(info.Tag);
 
             if (wasThere)
-                _counters.Hosting_State_AliveTargets--;
+                _counters.Hosting_State_AliveProxies--;
         }
 
-        TargetsInfo IRepository.FindTargets(string tag)
+        ProxyInfo IRepository.FindProxy(string tag)
         {
             return
-                find_targets(tag);
+                find_proxy(tag);
         }
 
-        TargetsInfo IRepository.GetTargets(string tag)
+        ProxyInfo IRepository.GetProxy(string tag)
         {
-            var target = find_targets(tag);
+            var proxy = find_proxy(tag);
 
-            if (target == null)
+            if (proxy == null)
             {
                 throw
-                    Helpers.MakeNew<HostingPeerException>(null, _log, "Can't find targets.{0}", tag);
+                    Helpers.MakeNew<HostingPeerException>(null, _log, "Can't find proxy.{0}", tag);
             }
 
-            return target;
+            return proxy;
         }
 
-        TargetsInfo[] IRepository.GetTargets()
+        ProxyInfo[] IRepository.GetProxies()
         {
             return
-                _targets.Values.ToArray();
+                _proxies.Values.ToArray();
         }
 
         #endregion

@@ -11,7 +11,7 @@ namespace l4p.VcallModel.Configuration
         public int? Port { get; set; }
         public string CallbackUriPattern { get; set; }
 
-        public string TargetsRole { get; set; }
+        public string ProxyRole { get; set; }
         public string HostingRole { get; set; }
         public NonRegisteredCallPolicy NonRegisteredCall { get; set; }
 
@@ -24,7 +24,7 @@ namespace l4p.VcallModel.Configuration
             ResolvingKey = MiscellaneousHelpers.RandomName8(null);
             DiscoveryScopePattern = "udp://l4p.vcallmodel/discovery/{0}/";
             CallbackUriPattern = "net.tcp://{0}:{1}/{2}/{3}/";
-            TargetsRole = "targets";
+            ProxyRole = "proxy";
             HostingRole = "hosting";
             AddressInUseRetries = 3;
             Timeouts = new Timeouts();
@@ -45,10 +45,10 @@ namespace l4p.VcallModel.Configuration
         public int DiscoveryOpening { get; set; }
         public int DiscoveryClosing { get; set; }
         public int HostingOpening { get; set; }
-        public int TargetOpening { get; set; }
+        public int ProxyOpening { get; set; }
         public int NodeClosing { get; set; }
         public int WcfHostClosing { get; set; }
-        public int TargetsHostingSubscriptionRetry { get; set; }
+        public int ProxyHostingSubscriptionRetry { get; set; }
 
         public int DurableQueue_NoDurablesIdle { get; set; }
         public int ActiveThread_Start { get; set; }
@@ -64,8 +64,8 @@ namespace l4p.VcallModel.Configuration
             HostingOpening = 5*1000;
             NodeClosing = 10*1000;
             WcfHostClosing = 5*1000;
-            TargetOpening = 5*1000;
-            TargetsHostingSubscriptionRetry = 1*1000;
+            ProxyOpening = 5*1000;
+            ProxyHostingSubscriptionRetry = 1*1000;
 
             DurableQueue_NoDurablesIdle = 1*1000;
             ActiveThread_Start = 5*1000;

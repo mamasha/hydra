@@ -9,26 +9,26 @@ using System;
 
 namespace l4p.VcallModel
 {
-    public interface IVhosting : ICommNode
+    public interface IHosting : ICommNode
     {
         /// <summary>
         /// Set method to be hosted ...</summary>
-        /// <param name="target">Method method group</param>
-        void AddTarget(Action target);
+        /// <param name="action">Method method group</param>
+        void Host(Action action);
 
         /// <summary>
         /// Set function to be hosted ...</summary>
         /// <typeparam name="R">Function return type</typeparam>
-        /// <param name="target">Function method group</param>
-        void AddTarget<R>(Func<R> target);
+        /// <param name="action">Function method group</param>
+        void Host<R>(Func<R> func);
 
-        void AddTarget<T1, T2>(string targetName, Action<T1, T2> target);
-        R AddTarget<T1, T2, R>(string targetName, Func<T1, T2, R> target);
+        void Host<T1, T2>(string actionName, Action<T1, T2> action);
+        R Host<T1, T2, R>(string funcName, Func<T1, T2, R> func);
 
-        void AddTarget<T1, T2>(Action<T1, T2> target);
+        void Host<T1, T2>(Action<T1, T2> action);
 
-        void AddTarget<T1, R>(Func<T1, R> target);
-        void AddTarget<T1, T2, R>(Func<T1, T2, R> target);
+        void Host<T1, R>(Func<T1, R> func);
+        void Host<T1, T2, R>(Func<T1, T2, R> func);
 
         /// <summary>
         /// Actual URI this hosting is listening on</summary>

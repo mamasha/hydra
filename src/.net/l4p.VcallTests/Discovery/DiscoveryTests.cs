@@ -21,23 +21,23 @@ namespace l4p.VcallTests.Discovery
     public class DiscoveryTests
     {
         [Test, Explicit]
-        public void SingleTargets_shoul_connect_to_hosting()
+        public void SingleProxy_shoul_connect_to_hosting()
         {
             var vcall = VcallSubsystem.New("l4p.vcalltests");
             vcall.Start();
 
-            var targets = vcall.NewTargets();
+            var vproxy = vcall.NewProxy();
 
             UnitTestingHelpers.RunUpdateLoop(30*1000, () => vcall.Counters);
 
-            vcall.Close(targets);
+            vcall.Close(vproxy);
             vcall.Stop();
 
             Console.WriteLine(vcall.Counters.Format("Vcall is stopped"));
         }
 
         [Test, Explicit]
-        public void SingleHosting_shoul_connect_to_targets()
+        public void SingleHosting_shoul_connect_to_proxy()
         {
             var vcall = VcallSubsystem.New("l4p.vcalltests");
             vcall.Start();
@@ -52,15 +52,15 @@ namespace l4p.VcallTests.Discovery
         }
 
         [Test, Explicit]
-        public void SingleTargets_shoul_connect_to_hosting_then_gone()
+        public void SingleProxy_shoul_connect_to_hosting_then_gone()
         {
-            var targets = Vcall.GetTargets();
+            var vproxy = Vcall.NewProxy();
             Thread.Sleep(10*1000);
-            targets.Close();
+            vproxy.Close();
         }
 
         [Test, Explicit]
-        public void SingleHosting_shoul_connect_to_targets_then_gone()
+        public void SingleHosting_shoul_connect_to_proxy_then_gone()
         {
             var hosting = Vcall.NewHosting();
             Thread.Sleep(10*1000);
@@ -73,7 +73,7 @@ namespace l4p.VcallTests.Discovery
             Console.WriteLine(Vcall.DebugCounters.Format("Vcall is initialized"));
 
             var hosting = Vcall.NewHosting();
-            var targets = Vcall.GetTargets();
+            var vproxy = Vcall.NewProxy();
 
             Thread.Sleep(5000);
             Console.WriteLine(Vcall.DebugCounters.Format("All nodes are active"));
@@ -92,7 +92,7 @@ namespace l4p.VcallTests.Discovery
                 Console.WriteLine(Vcall.DebugCounters.Format("No active hosts"));
             }
 
-            targets.Close();
+            vproxy.Close();
             Thread.Sleep(2000);
 
             Console.WriteLine(Vcall.DebugCounters.Format("All nodes are closed"));
@@ -107,15 +107,15 @@ namespace l4p.VcallTests.Discovery
             const int count = 7;
             var random = new Random();
 
-            var hosts = new IVhosting[count];
-            var targets = new IVtarget[count];
+            var hosts = new IHosting[count];
+            var vproxy = new IProxy[count];
 
             for (int i = 0; i < count; i++)
             {
                 Thread.Sleep(random.Next(100));
 
                 hosts[i] = vcall.NewHosting();
-                targets[i] = vcall.NewTargets();
+                vproxy[i] = vcall.NewProxy();
             }
 
             UnitTestingHelpers.RunUpdateLoop(120 * 1000, () => vcall.Counters);
@@ -141,7 +141,7 @@ namespace l4p.VcallTests.Discovery
 
             var nodes = new ICommNode[count];
 
-            int targetsCount = 0;
+            int proxyCount = 0;
             int hostingCount = 0;
 
             Console.WriteLine("Spawning {0} nodes", count);
@@ -152,8 +152,8 @@ namespace l4p.VcallTests.Discovery
 
                 if (random.Next(100) % 2 == 0)
                 {
-                    nodes[i] = vcall.NewTargets();
-                    targetsCount++;
+                    nodes[i] = vcall.NewProxy();
+                    proxyCount++;
                 }
                 else
                 {
@@ -165,7 +165,7 @@ namespace l4p.VcallTests.Discovery
             var stopTimer = Stopwatch.StartNew();
             var printTimer = Stopwatch.StartNew();
 
-            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+            Console.WriteLine("Spawned {0} proxies and {1} hostings", proxyCount, hostingCount);
 
             for (;;)
             {
@@ -177,8 +177,8 @@ namespace l4p.VcallTests.Discovery
 
                 if (random.Next(100) % 2 == 0)
                 {
-                    nodes[indx] = vcall.NewTargets();
-                    targetsCount++;
+                    nodes[indx] = vcall.NewProxy();
+                    proxyCount++;
                 }
                 else
                 {
@@ -188,7 +188,7 @@ namespace l4p.VcallTests.Discovery
 
                 if (printTimer.ElapsedMilliseconds > 5000)
                 {
-                    Console.WriteLine(vcall.Counters.Format("Spawned {0} targets and {1} hostings", targetsCount, hostingCount));
+                    Console.WriteLine(vcall.Counters.Format("Spawned {0} proxies and {1} hostings", proxyCount, hostingCount));
                     printTimer.Restart();
                 }
 
@@ -196,7 +196,7 @@ namespace l4p.VcallTests.Discovery
                     break;
             }
 
-            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+            Console.WriteLine("Spawned {0} proxies and {1} hostings", proxyCount, hostingCount);
 
             for (int i = 0; i < count; i++)
             {
@@ -227,7 +227,7 @@ namespace l4p.VcallTests.Discovery
             var nodes = new ICommNode[count];
             var timers = new Stopwatch[count];
 
-            int targetsCount = 0;
+            int proxyCount = 0;
             int hostingCount = 0;
             int closedCount = 0;
 
@@ -241,8 +241,8 @@ namespace l4p.VcallTests.Discovery
 
                 if (random.Next(100) % 2 == 0)
                 {
-                    nodes[indx] = vcall.NewTargets();
-                    targetsCount++;
+                    nodes[indx] = vcall.NewProxy();
+                    proxyCount++;
                 }
                 else
                 {
@@ -264,7 +264,7 @@ namespace l4p.VcallTests.Discovery
             var stopTimer = Stopwatch.StartNew();
             var printTimer = Stopwatch.StartNew();
 
-            Console.WriteLine("Spawned {0} targets and {1} hostings", targetsCount, hostingCount);
+            Console.WriteLine("Spawned {0} proxies and {1} hostings", proxyCount, hostingCount);
 
             for (;;)
             {
@@ -277,7 +277,7 @@ namespace l4p.VcallTests.Discovery
 
                 if (printTimer.ElapsedMilliseconds > 5000)
                 {
-                    Console.WriteLine(vcall.Counters.Format("Spawned {0} targets and {1} hostings (closed={2})", targetsCount, hostingCount, closedCount));
+                    Console.WriteLine(vcall.Counters.Format("Spawned {0} proxies and {1} hostings (closed={2})", proxyCount, hostingCount, closedCount));
                     printTimer.Restart();
                 }
 
@@ -285,7 +285,7 @@ namespace l4p.VcallTests.Discovery
                     break;
             }
 
-            Console.WriteLine("Spawned {0} targets and {1} hostings (closed={2})", targetsCount, hostingCount, closedCount);
+            Console.WriteLine("Spawned {0} proxies and {1} hostings (closed={2})", proxyCount, hostingCount, closedCount);
 
             for (int i = 0; i < count; i++)
             {

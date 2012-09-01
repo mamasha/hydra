@@ -5,7 +5,7 @@ using l4p.VcallModel.Core;
 using l4p.VcallModel.Hosting;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Target.Proxies
+namespace l4p.VcallModel.Proxy.Channels
 {
     class HostingPeer : IHostingPeer
     {
@@ -50,7 +50,7 @@ namespace l4p.VcallModel.Target.Proxies
             _channel = new WcfChannel(binding, epoint);
 
             lock (_mutex)
-                _counters.Targets_Event_NewWcfChannel++;
+                _counters.Proxy_Event_NewWcfChannel++;
         }
 
         private void call(Action action)
@@ -66,7 +66,7 @@ namespace l4p.VcallModel.Target.Proxies
                 _channel = null;
 
                 lock (_mutex)
-                    _counters.Targets_Error_HostingCalls++;
+                    _counters.Proxy_Error_HostingCalls++;
 
                 throw;
             }
@@ -74,8 +74,8 @@ namespace l4p.VcallModel.Target.Proxies
 
         #endregion
 
-        void IHostingPeer.SubscribeTargets(TargetsInfo info) { call(() => _channel.SubscribeTargets(info)); }
-        void IHostingPeer.CancelTargets(string targetsTag) { call(() => _channel.CancelTargets(targetsTag)); }
+        void IHostingPeer.SubscribeProxy(ProxyInfo info) { call(() => _channel.SubscribeProxy(info)); }
+        void IHostingPeer.CancelProxy(string proxyTag) { call(() => _channel.CancelProxy(proxyTag)); }
     }
 
     class WcfChannel : ClientBase<IHostingPeer>, IHostingPeer
@@ -84,7 +84,7 @@ namespace l4p.VcallModel.Target.Proxies
             base(binding, epoint)
         { }
 
-        void IHostingPeer.SubscribeTargets(TargetsInfo info) { Channel.SubscribeTargets(info); }
-        void IHostingPeer.CancelTargets(string targetsTag) { Channel.CancelTargets(targetsTag); }
+        void IHostingPeer.SubscribeProxy(ProxyInfo info) { Channel.SubscribeProxy(info); }
+        void IHostingPeer.CancelProxy(string proxyTag) { Channel.CancelProxy(proxyTag); }
     }
 }

@@ -88,7 +88,7 @@ namespace l4p.VcallModel.Discovery
             }
             catch (Exception ex)
             {
-                warn(ex, "Failed while notifying targets.{0}", subscriber.Tag);
+                warn(ex, "Failed while notifying proxy.{0}", subscriber.Tag);
             }
         }
 
@@ -115,7 +115,7 @@ namespace l4p.VcallModel.Discovery
             Array.ForEach(subscribers,
                 subscriber => _self.repo.Remove(subscriber));
 
-            trace("target.{0} is canceled (count={1})", tag, subscribers.Length);
+            trace("proxy.{0} is canceled (count={1})", tag, subscribers.Length);
         }
 
         #endregion
@@ -137,7 +137,7 @@ namespace l4p.VcallModel.Discovery
 
             update_subscriber(subscriber);
 
-            trace("targets.{0} is subscribed", subscriber.Tag);
+            trace("proxy.{0} is subscribed", subscriber.Tag);
         }
 
         void IManager.Cancel(string tag)

@@ -8,7 +8,7 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.ServiceModel;
 using l4p.VcallModel.Hosting;
-using l4p.VcallModel.Target;
+using l4p.VcallModel.Proxy;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Manager
@@ -16,7 +16,7 @@ namespace l4p.VcallModel.Manager
     interface IEngine
     {
         HostingPeer NewHosting(HostingConfiguration config, VcallSubsystem core);
-        TargetsPeer NewTargets(TargetConfiguration config, VcallSubsystem core);
+        ProxyPeer NewProxy(ProxyConfiguration config, VcallSubsystem core);
         void CloseNode(int timeout, ICommNode node, IDoneEvent observer);
     }
 
@@ -115,22 +115,22 @@ namespace l4p.VcallModel.Manager
             }
         }
 
-        TargetsPeer IEngine.NewTargets(TargetConfiguration config, VcallSubsystem core)
+        ProxyPeer IEngine.NewProxy(ProxyConfiguration config, VcallSubsystem core)
             // user arbitrary thread
         {
-            var timeout = TimeSpan.FromMilliseconds(_self.vconfig.Timeouts.TargetOpening);
+            var timeout = TimeSpan.FromMilliseconds(_self.vconfig.Timeouts.ProxyOpening);
             int addressInUseRetries = 0;
 
             for (;;)
             {
-                var targets = new TargetsPeer(config, core);
-                string uri = make_dynamic_uri(targets.Tag, config.TargetsRole);
+                var proxy = new ProxyPeer(config, core);
+                string uri = make_dynamic_uri(proxy.Tag, config.ProxyRole);
 
                 try
                 {
-                    targets.Start(uri, timeout);
+                    proxy.Start(uri, timeout);
 
-                    return targets;
+                    return proxy;
                 }
                 catch (Exception ex)
                 {
@@ -148,11 +148,11 @@ namespace l4p.VcallModel.Manager
                             _self.counters.Vcall_Error_AddressInUse++;
 
                         throw Helpers.MakeNew<VcallException>(ex, _log,
-                            "targets.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", targets.Tag, uri, addressInUseRetries);
+                            "proxy.{0}: Failed to listen on '{1}'; probably the TCP port is constantly in use (retries={2})", proxy.Tag, uri, addressInUseRetries);
                     }
 
                     lock (_self.mutex)
-                        _self.counters.Vcall_Error_NewTargetsFailed++;
+                        _self.counters.Vcall_Error_NewProxyFailed++;
 
                     throw;
                 }

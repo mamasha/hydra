@@ -17,21 +17,21 @@ namespace l4p.VcallModel
         Default,
 
         /// <summary>
-        /// Hosting is visible to targets withing current process only</summary>
+        /// Hosting is visible to proxies withing current process only</summary>
         /// <remarks>Not supported yet</remarks>
         ProcessPrivate,
 
         /// <summary>
-        /// Hosting is visible to targets from process if current application domain only</summary>
+        /// Hosting is visible to proxies from process if current application domain only</summary>
         /// <remarks>Not supported yet</remarks>
         ApplicationDomain,
 
         /// <summary>
-        /// Hosting is visible to targets from any process running on local host machine</summary>
+        /// Hosting is visible to proxies from any process running on local host machine</summary>
         LocalHost,
 
         /// <summary>
-        /// Hosting is visible to targets from any process with a same ResolvingKey running on a local Ethernet</summary>
+        /// Hosting is visible to proxies from any process with a same ResolvingKey running on a local Ethernet</summary>
         ResolvingDomain
     }
 
@@ -42,7 +42,7 @@ namespace l4p.VcallModel
         public string NameSpace { get; set; }
 
         /// <summary>
-        /// Defines which targets will see functions hosted by this hosting </summary>
+        /// Defines which proxies will see functions hosted by this hosting </summary>
         /// <remarks>Currently supported scopes are LocalHost and ResolvingRing</remarks>
         public HostingVisibilityScope? VisibilityScope;
 
@@ -51,9 +51,9 @@ namespace l4p.VcallModel
         /// If not specified a random available port is chosen</summary>
         public int? Port { get; set; }
 
-        public string TargetsRole { get; set; }
+        public string ProxyRole { get; set; }
         public string HostingRole { get; set; }
 
-        public int? SubscribeToTargets_RetryTimeout { get; set; }
+        public int? SubscribeToProxy_RetryTimeout { get; set; }
     }
 }

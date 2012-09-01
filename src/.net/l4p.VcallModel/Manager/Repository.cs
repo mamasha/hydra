@@ -15,8 +15,8 @@ namespace l4p.VcallModel.Manager
 {
     interface IRepository
     {
-        void Add(IVhosting node);
-        void Add(IVtarget node);
+        void Add(IHosting node);
+        void Add(IProxy node);
         void Remove(ICommNode node);
         ICommNode[] GetNodes();
     }
@@ -82,12 +82,12 @@ namespace l4p.VcallModel.Manager
 
         #region IRepository
 
-        void IRepository.Add(IVhosting node)
+        void IRepository.Add(IHosting node)
         {
             add_node(node);
         }
 
-        void IRepository.Add(IVtarget node)
+        void IRepository.Add(IProxy node)
         {
             add_node(node);
         }
