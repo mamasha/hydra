@@ -141,7 +141,14 @@ namespace l4p.VcallModel.Proxy
 
         private void subscribe_hosting(HostingInfo info)
         {
-            trace("Got a new hosting.{0} at '{1}'", info.Tag, info.CallbackUri);
+            trace("Got a new hosting.{0} (namespace='{1}') at '{2}'", info.Tag, info.NameSpace, info.CallbackUri);
+
+            if (info.NameSpace != _config.NameSpace)
+            {
+                trace("Not a my namespace hostring.{0} (namespace='{1}'); mine='{2}'", info.Tag, info.NameSpace, _config.NameSpace);
+                _counters.Proxy_Event_NotMyNamespace++;
+                return;
+            }
 
             if (_repo.HasHosting(info.Tag))
             {

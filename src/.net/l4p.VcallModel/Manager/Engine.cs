@@ -41,7 +41,6 @@ namespace l4p.VcallModel.Manager
 
         #endregion
 
-
         #region private
 
         private void trace(string format, params object[] args)

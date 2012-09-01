@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using l4p.VcallModel.Configuration;
+using l4p.VcallModel.Connectivity;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
 
@@ -18,6 +19,7 @@ namespace l4p.VcallModel.Manager
         public VcallConfiguration vconfig { get; set; }
         public IRepository repo { get; set; }
         public IHostResolver resolver { get; set; }
+        public IConnectivity connectivity { get; set; }
 
         public DebugCounters counters { get; set; }
     }

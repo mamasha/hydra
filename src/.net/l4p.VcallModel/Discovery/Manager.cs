@@ -84,7 +84,7 @@ namespace l4p.VcallModel.Discovery
         {
             try
             {
-                subscriber.OnPublish(callbackUri, role, alive);
+                subscriber.OnPubSub(callbackUri, role, alive);
             }
             catch (Exception ex)
             {

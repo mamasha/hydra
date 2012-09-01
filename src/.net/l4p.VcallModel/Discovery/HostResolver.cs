@@ -6,7 +6,6 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using l4p.VcallModel.Core;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Discovery
@@ -119,11 +118,11 @@ namespace l4p.VcallModel.Discovery
             publish(publisher);
         }
 
-        void IHostResolver.Subscribe(PublishNotification onPublish, string tag)
+        void IHostResolver.Subscribe(PubSubEvent onPubSub, string tag)
         {
             var subscriber = new Subscriber
                                  {
-                                     OnPublish = onPublish,
+                                     OnPubSub = onPubSub,
                                      Tag = tag
                                  };
 

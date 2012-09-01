@@ -49,7 +49,7 @@ namespace l4p.VcallModel.Utils
                 String.Format("{0}.{1}", ipProperties.HostName, ipProperties.DomainName);
         }
 
-        public static string RandomName8(this IHelpers Helpers)
+        public static string GetRandomName(this IHelpers Helpers)
         {
             return
                 Path.GetFileNameWithoutExtension(Path.GetRandomFileName());

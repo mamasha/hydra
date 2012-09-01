@@ -43,7 +43,7 @@ namespace l4p.VcallModel.Core
 
         protected CommNode()
         {
-            _tag = Helpers.RandomName8();
+            _tag = Helpers.GetRandomName();
             _counters = Context.Get<ICountersDb>().NewCounters();
             _state = State.None;
         }

@@ -22,7 +22,7 @@ namespace l4p.VcallModel.Discovery
 
     class Subscriber
     {
-        public PublishNotification OnPublish { get; set; }
+        public PubSubEvent OnPubSub { get; set; }
         public string Tag { get; set; }
     }
 

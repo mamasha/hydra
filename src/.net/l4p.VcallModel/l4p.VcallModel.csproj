@@ -50,9 +50,11 @@
     <Compile Include="Core\DebugCounters.cs" />
     <Compile Include="Core\DurableOperation.cs" />
     <Compile Include="Core\DurableQueue.cs" />
+    <Compile Include="Connectivity\ConnectivityManager.cs" />
     <Compile Include="Core\IRevertable.cs" />
     <Compile Include="Core\Janitor.cs" />
     <Compile Include="Core\ActiveThread.cs" />
+    <Compile Include="Hosting\Manager.cs" />
     <Compile Include="Manager\Engine.cs" />
     <Compile Include="Manager\Self.cs" />
     <Compile Include="Hosting\Channels\ContextualHost.cs" />

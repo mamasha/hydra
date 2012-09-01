@@ -6,13 +6,9 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using System.ServiceModel.Discovery;
-using l4p.VcallModel.Core;
 
 namespace l4p.VcallModel.Discovery
 {
-    delegate void PublishNotification(string callbackUri, string role, bool alive);
-
     class HostResolverConfiguration
     {
         public string ResolvingKey { get; set; }
@@ -30,13 +26,15 @@ namespace l4p.VcallModel.Discovery
         public HostResolverException(string message, Exception inner) : base(message, inner) { }
     }
 
+    delegate void PubSubEvent(string callbackUri, string role, bool alive);
+
     interface IHostResolver
     {
         void Start();
         void Stop();
 
         void Publish(string callbackUri, string role, string tag);
-        void Subscribe(PublishNotification onPublish, string tag);
+        void Subscribe(PubSubEvent onPubSub, string tag);
         void Cancel(string tag);
     }
 }

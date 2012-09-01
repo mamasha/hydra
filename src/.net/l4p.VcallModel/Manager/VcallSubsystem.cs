@@ -7,7 +7,9 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using l4p.VcallModel.Configuration;
+using l4p.VcallModel.Connectivity;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
 using l4p.VcallModel.Hosting;
@@ -42,6 +44,7 @@ namespace l4p.VcallModel.Manager
 
         private readonly ICountersDb _countersDb;
         private readonly Self _self;
+        private readonly string _connectivityTag;
         private readonly IEngine _engine;
 
         #endregion
@@ -64,7 +67,7 @@ namespace l4p.VcallModel.Manager
 
         public static IVcallSubsystem New()
         {
-            var vconfig = new VcallConfiguration {ResolvingKey = Helpers.RandomName8()};
+            var vconfig = new VcallConfiguration {ResolvingKey = Helpers.GetRandomName()};
 
             return
                 new VcallSubsystem(vconfig);
@@ -72,6 +75,8 @@ namespace l4p.VcallModel.Manager
 
         private VcallSubsystem(VcallConfiguration vconfig)
         {
+            _connectivityTag = Helpers.GetRandomName();
+
             Logger.Config = vconfig.Logging;
             _countersDb = CountersDb.New();
 
@@ -86,6 +91,7 @@ namespace l4p.VcallModel.Manager
                 _self.vconfig = vconfig;
                 _self.repo = Repository.New();
                 _self.resolver = HostResolver.New(resolvingConfig);
+                _self.connectivity = ConnectivityManager.New();
 
                 _self.counters = _countersDb.NewCounters();
             }
@@ -157,6 +163,9 @@ namespace l4p.VcallModel.Manager
         void IVcallSubsystem.Start()
         {
             _self.resolver.Start();
+            _self.connectivity.Start();
+
+            _self.resolver.Subscribe(_self.connectivity.NotifyPubSubMsg, _connectivityTag);
         }
 
         void IVcallSubsystem.Stop()
@@ -169,6 +178,9 @@ namespace l4p.VcallModel.Manager
                 close_comm_nodes(nodes);
             }
 
+            _self.resolver.Cancel(_connectivityTag);
+
+            _self.connectivity.Stop();
             _self.resolver.Stop();
         }
 

@@ -57,6 +57,7 @@ namespace l4p.VcallModel.Core
         [DataMember] public int Proxy_Event_UnknownHosting { get; set; }
         [DataMember] public int Proxy_Event_SubscribedToHosting { get; set; }
         [DataMember] public int Proxy_Event_NewWcfChannel { get; set; }
+        [DataMember] public int Proxy_Event_NotMyNamespace { get; set; }
 
         [DataMember] public int Proxy_Error_SubscribeToHosting { get; set; }
         [DataMember] public int Proxy_Error_HostingCalls { get; set; }
@@ -76,6 +77,7 @@ namespace l4p.VcallModel.Core
         [DataMember] public int Hosting_Event_UnknownProxy { get; set; }
         [DataMember] public int Hosting_Event_SubscribedToProxy { get; set; }
         [DataMember] public int Hosting_Event_NewWcfChannel { get; set; }
+        [DataMember] public int Hosting_Event_NotMyNamespace { get; set; }
 
         [DataMember] public int Hosting_Error_SubscribeToProxy { get; set; }
         [DataMember] public int Hosting_Error_ProxyCalls { get; set; }

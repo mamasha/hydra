@@ -21,7 +21,7 @@ namespace l4p.VcallModel.Configuration
 
         public VcallConfiguration()
         {
-            ResolvingKey = MiscellaneousHelpers.RandomName8(null);
+            ResolvingKey = MiscellaneousHelpers.GetRandomName(null);
             DiscoveryScopePattern = "udp://l4p.vcallmodel/discovery/{0}/";
             CallbackUriPattern = "net.tcp://{0}:{1}/{2}/{3}/";
             ProxyRole = "proxy";

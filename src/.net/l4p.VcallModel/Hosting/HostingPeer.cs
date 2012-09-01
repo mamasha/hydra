@@ -147,7 +147,14 @@ namespace l4p.VcallModel.Hosting
 
         private void subscribe_proxy(ProxyInfo info)
         {
-            trace("Got a new proxy.{0} at '{1}'", info.Tag, info.ListeningUri);
+            trace("Got a new proxy.{0} (namespace='{1}') at '{2}'", info.Tag, info.NameSpace, info.ListeningUri);
+
+            if (info.NameSpace != _config.NameSpace)
+            {
+                trace("Not a my namespace proxy.{0} (namespace='{1}'); mine='{2}'", info.Tag, info.NameSpace, _config.NameSpace);
+                _counters.Hosting_Event_NotMyNamespace++;
+                return;
+            }
 
             if (_repo.HasProxy(info.Tag))
             {
@@ -224,6 +231,11 @@ namespace l4p.VcallModel.Hosting
             trace("hosting is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
             observer.Signal();
+        }
+
+        private void start_hosting_of(Action action)
+        {
+            
         }
 
         #region public api
@@ -314,8 +326,8 @@ namespace l4p.VcallModel.Hosting
 
         void IHosting.Host(Action action)
         {
-            throw
-                Helpers.NewNotImplementedException();
+            _thr.PostAction(
+                () => start_hosting_of(action));
         }
 
         void IHosting.Host<R>(Func<R> func)
