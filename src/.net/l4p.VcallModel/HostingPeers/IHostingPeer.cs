@@ -8,9 +8,9 @@ copied or duplicated in any form, in whole or in part.
 using System;
 using System.Runtime.Serialization;
 using System.ServiceModel;
-using l4p.VcallModel.Proxy;
+using l4p.VcallModel.ProxyPeers;
 
-namespace l4p.VcallModel.Hosting
+namespace l4p.VcallModel.HostingPeers
 {
     class HostingPeerException : VcallModelException
     {

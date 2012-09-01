@@ -11,8 +11,8 @@ using System.Threading;
 using l4p.VcallModel;
 using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Manager;
 using l4p.VcallModel.Utils;
+using l4p.VcallModel.VcallSubsystems;
 using NUnit.Framework;
 
 namespace l4p.VcallTests.Discovery

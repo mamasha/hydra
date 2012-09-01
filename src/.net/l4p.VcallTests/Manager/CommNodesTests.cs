@@ -6,7 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using l4p.VcallModel.Manager;
+using l4p.VcallModel.VcallSubsystems;
 using NUnit.Framework;
 
 namespace l4p.VcallTests.Manager

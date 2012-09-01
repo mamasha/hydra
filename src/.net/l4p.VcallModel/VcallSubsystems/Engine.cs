@@ -7,11 +7,11 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
-using l4p.VcallModel.Hosting;
-using l4p.VcallModel.Proxy;
+using l4p.VcallModel.HostingPeers;
+using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Manager
+namespace l4p.VcallModel.VcallSubsystems
 {
     interface IEngine
     {

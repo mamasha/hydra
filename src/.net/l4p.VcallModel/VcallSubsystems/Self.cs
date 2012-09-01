@@ -11,7 +11,7 @@ using l4p.VcallModel.Connectivity;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
 
-namespace l4p.VcallModel.Manager
+namespace l4p.VcallModel.VcallSubsystems
 {
     class Self
     {

@@ -1,11 +1,18 @@
-﻿using System;
+﻿/*
+Copyright (c) 2010-2012 Mamasha Knows, all rights reserved
+This is proprietary source code of Mamasha Knows Ltd.
+The contents of this file may not be disclosed to third parties, 
+copied or duplicated in any form, in whole or in part.
+*/
+
+using System;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Hosting;
+using l4p.VcallModel.HostingPeers;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Proxy.Channels
+namespace l4p.VcallModel.ProxyPeers.Channels
 {
     class HostingPeer : IHostingPeer
     {

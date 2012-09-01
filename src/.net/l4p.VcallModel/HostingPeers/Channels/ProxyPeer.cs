@@ -2,10 +2,10 @@
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Proxy;
+using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Hosting.Channels
+namespace l4p.VcallModel.HostingPeers.Channels
 {
     class ProxyPeer : IProxyPeer
     {

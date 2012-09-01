@@ -5,13 +5,12 @@ The contents of this file may not be disclosed to third parties,
 copied or duplicated in any form, in whole or in part.
 */
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Manager
+namespace l4p.VcallModel.VcallSubsystems
 {
     interface IRepository
     {

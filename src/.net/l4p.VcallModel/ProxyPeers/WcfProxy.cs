@@ -7,53 +7,53 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
-using l4p.VcallModel.Hosting.Channels;
+using l4p.VcallModel.ProxyPeers.Channels;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Hosting
+namespace l4p.VcallModel.ProxyPeers
 {
-    public class WcfHostringException : VcallModelException
+    public class WcfProxyException : VcallModelException
     {
-        public WcfHostringException() { }
-        public WcfHostringException(string message) : base(message) { }
-        public WcfHostringException(string message, Exception inner) : base(message, inner) { }
+        public WcfProxyException() { }
+        public WcfProxyException(string message) : base(message) { }
+        public WcfProxyException(string message, Exception inner) : base(message, inner) { }
     }
 
-    interface IWcfHostring
+    interface IWcfProxy
     {
         string Start(string uri, TimeSpan timeout);
         void Stop(TimeSpan timeout);
     }
 
-    class WcfHosting : IWcfHostring
+    class WcfProxy : IWcfProxy
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<WcfHosting>();
+        private static readonly ILogger _log = Logger.New<WcfProxy>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         private ServiceHost _host;
 
         #endregion
-
+        
         #region construction
 
-        public WcfHosting(IHostingPeer peer)
+        public WcfProxy(IProxyPeer peer)
         {
             Helpers.TryCatch(_log,
                 () => _host = new ContextualHost(peer),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
+                ex => Helpers.ThrowNew<WcfProxyException>(ex, _log, "Failed to create proxy for '{0}'", typeof(IProxyPeer).Name));
         }
 
         #endregion
 
-        #region IWcfHostring
+        #region IWcfProxy
 
-        string IWcfHostring.Start(string uri, TimeSpan timeout)
+        string IWcfProxy.Start(string uri, TimeSpan timeout)
         {
             Helpers.TryCatch(_log,
-                () => _host.AddServiceEndpoint(typeof(IHostingPeer), new TcpStreamBindng(), uri),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
+                () => _host.AddServiceEndpoint(typeof(IProxyPeer), new TcpStreamBindng(), uri),
+                ex => Helpers.ThrowNew<WcfProxyException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
 
             Helpers.TimedAction(
                 () => _host.Open(timeout), "Failed to open hosting service in {0} millis", timeout.TotalMilliseconds);
@@ -63,7 +63,7 @@ namespace l4p.VcallModel.Hosting
             return listeningUri.ToString();
         }
 
-        void IWcfHostring.Stop(TimeSpan timeout)
+        void IWcfProxy.Stop(TimeSpan timeout)
         {
             Helpers.TimedAction(
                 () => _host.Close(timeout), "Failed to close hosting service in {0} millis", timeout.TotalMilliseconds);

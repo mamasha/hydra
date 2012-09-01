@@ -6,20 +6,35 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using System.Linq.Expressions;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Hosting
+namespace l4p.VcallModel.InvokationBusses
 {
-    class Manager : IHosting
+    class InvokationBus : IProxy
     {
         #region members
 
-        private static readonly ILogger _log = Logger.New<Manager>();
+        private static readonly ILogger _log = Logger.New<InvokationBus>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
+
+        private ProxyConfiguration _config;
 
         #endregion
 
         #region construction
+
+        public static IProxy New(ProxyConfiguration config)
+        {
+            return
+                new InvokationBus(config);
+        }
+
+        private InvokationBus(ProxyConfiguration config)
+        {
+            _config = config;
+        }
+
         #endregion
 
         #region ICommNode
@@ -41,46 +56,26 @@ namespace l4p.VcallModel.Hosting
 
         #endregion
 
-        #region IHosting
+        #region IProxy
 
-        void IHosting.Host(Action action)
+        void IProxy.Call(Expression<Action> vcall)
         {
             throw new NotImplementedException();
         }
 
-        void IHosting.Host<R>(Func<R> func)
+        R IProxy.Call<R>(Expression<Func<R>> vcall)
         {
             throw new NotImplementedException();
         }
 
-        void IHosting.Host<T1, T2>(string actionName, Action<T1, T2> action)
+        void IProxy.Call(string methodName, params object[] args)
         {
             throw new NotImplementedException();
         }
 
-        R IHosting.Host<T1, T2, R>(string funcName, Func<T1, T2, R> func)
+        R IProxy.Call<R>(string functionName, params object[] args)
         {
             throw new NotImplementedException();
-        }
-
-        void IHosting.Host<T1, T2>(Action<T1, T2> action)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IHosting.Host<T1, R>(Func<T1, R> func)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IHosting.Host<T1, T2, R>(Func<T1, T2, R> func)
-        {
-            throw new NotImplementedException();
-        }
-
-        string IHosting.ListeningUri
-        {
-            get { throw new NotImplementedException(); }
         }
 
         #endregion

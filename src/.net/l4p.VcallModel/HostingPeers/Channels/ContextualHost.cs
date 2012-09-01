@@ -1,6 +1,6 @@
 ﻿using System.ServiceModel;
 
-namespace l4p.VcallModel.Hosting.Channels
+namespace l4p.VcallModel.HostingPeers.Channels
 {
     class ContextualHost : ServiceHost
     {

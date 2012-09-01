@@ -9,11 +9,11 @@ using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using l4p.VcallModel.Core;
-using l4p.VcallModel.Hosting;
-using l4p.VcallModel.Manager;
+using l4p.VcallModel.HostingPeers;
 using l4p.VcallModel.Utils;
+using l4p.VcallModel.VcallSubsystems;
 
-namespace l4p.VcallModel.Proxy
+namespace l4p.VcallModel.ProxyPeers
 {
     class ProxyPeer 
         : CommNode

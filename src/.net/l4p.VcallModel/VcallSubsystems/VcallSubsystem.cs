@@ -6,17 +6,17 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using System.Diagnostics;
-using System.IO;
 using l4p.VcallModel.Configuration;
 using l4p.VcallModel.Connectivity;
 using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
-using l4p.VcallModel.Hosting;
-using l4p.VcallModel.Proxy;
+using l4p.VcallModel.HostingPeers;
+using l4p.VcallModel.Hostings;
+using l4p.VcallModel.InvokationBusses;
+using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
 
-namespace l4p.VcallModel.Manager
+namespace l4p.VcallModel.VcallSubsystems
 {
     interface IVcallSubsystem
     {
@@ -214,6 +214,9 @@ namespace l4p.VcallModel.Manager
 
             trace("hostring.{0} is started", hosting.Tag);
 
+            return
+                Hosting.New(config);
+
             return hosting;
         }
 
@@ -247,6 +250,9 @@ namespace l4p.VcallModel.Manager
             }
 
             trace("proxy.{0} is started", proxy.Tag);
+
+            return
+                InvokationBus.New(config);
 
             return proxy;
         }
