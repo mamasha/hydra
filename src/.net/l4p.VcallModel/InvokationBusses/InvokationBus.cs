@@ -7,7 +7,9 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.Linq.Expressions;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.Utils;
+using l4p.VcallModel.VcallSubsystems;
 
 namespace l4p.VcallModel.InvokationBusses
 {
@@ -18,21 +20,31 @@ namespace l4p.VcallModel.InvokationBusses
         private static readonly ILogger _log = Logger.New<InvokationBus>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private ProxyConfiguration _config;
+        private readonly ICommPeer _peer;
+        private readonly IVcallSubsystem _vcall;
+        private readonly ProxyConfiguration _config;
 
         #endregion
 
         #region construction
 
-        public static IProxy New(ProxyConfiguration config)
+        public static IProxy New(ICommPeer peer, IVcallSubsystem vcall, ProxyConfiguration config)
         {
             return
-                new InvokationBus(config);
+                new InvokationBus(peer, vcall, config);
         }
 
-        private InvokationBus(ProxyConfiguration config)
+        private InvokationBus(ICommPeer peer, IVcallSubsystem vcall, ProxyConfiguration config)
         {
+            _peer = peer;
+            _vcall = vcall;
             _config = config;
+        }
+
+        internal void HandlePublisher()
+        {
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         #endregion
@@ -41,17 +53,12 @@ namespace l4p.VcallModel.InvokationBusses
 
         string ICommNode.Tag
         {
-            get { throw new NotImplementedException(); }
+            get { return _peer.Tag; }
         }
 
         void ICommNode.Close()
         {
-            throw new NotImplementedException();
-        }
-
-        void ICommNode.Stop(Internal access, int timeout, IDoneEvent observer)
-        {
-            throw new NotImplementedException();
+            _vcall.Close(_peer);
         }
 
         #endregion

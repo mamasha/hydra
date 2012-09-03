@@ -30,7 +30,7 @@ namespace l4p.VcallTests.Discovery
 
             UnitTestingHelpers.RunUpdateLoop(30*1000, () => vcall.Counters);
 
-            vcall.Close(vproxy);
+            vproxy.Close();
             vcall.Stop();
 
             Console.WriteLine(vcall.Counters.Format("Vcall is stopped"));

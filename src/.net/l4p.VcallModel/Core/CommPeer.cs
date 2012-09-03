@@ -6,19 +6,24 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using System.IO;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.Core
 {
-    class CommNodeException : VcallModelException
+    class CommPeerException : VcallModelException
     {
-        public CommNodeException() { }
-        public CommNodeException(string message) : base(message) { }
-        public CommNodeException(string message, Exception inner) : base(message, inner) { }
+        public CommPeerException() { }
+        public CommPeerException(string message) : base(message) { }
+        public CommPeerException(string message, Exception inner) : base(message, inner) { }
     }
 
-    abstract class CommNode : ICommNode
+    interface ICommPeer
+    {
+        string Tag { get; }
+        void Stop(int timeout, IDoneEvent observer);
+    }
+
+    abstract class CommPeer : ICommPeer
     {
         #region helpers
 
@@ -28,7 +33,7 @@ namespace l4p.VcallModel.Core
 
         #region members
 
-        private static readonly ILogger _log = Logger.New<CommNode>();
+        private static readonly ILogger _log = Logger.New<CommPeer>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
         protected readonly string _tag;
@@ -41,7 +46,7 @@ namespace l4p.VcallModel.Core
 
         #region construction
 
-        protected CommNode()
+        protected CommPeer()
         {
             _tag = Helpers.GetRandomName();
             _counters = Context.Get<ICountersDb>().NewCounters();
@@ -61,26 +66,20 @@ namespace l4p.VcallModel.Core
                 return;
 
             throw 
-                Helpers.MakeNew<CommNodeException>(null, _log, "Communication internal state is invalid; required={0} actual={1}", state, _state);
+                Helpers.MakeNew<CommPeerException>(null, _log, "Communication internal state is invalid; required={0} actual={1}", state, _state);
         }
 
         #endregion
 
-        #region ICommNode
+        #region ICommPeer
 
-        string ICommNode.Tag
+        string ICommPeer.Tag
         {
             get { return _tag; }
         }
 
-        void ICommNode.Close()
+        void ICommPeer.Stop(int timeout, IDoneEvent observer)
         {
-            Close();
-        }
-
-        void ICommNode.Stop(Internal access, int timeout, IDoneEvent observer)
-        {
-            InternalAccess.Check(access);
             Stop(TimeSpan.FromMilliseconds(timeout), observer);
         }
 

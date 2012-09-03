@@ -89,10 +89,10 @@ namespace l4p.VcallModel
             try
             {
                 if (defaultHosting != null)
-                    _core.Close(defaultHosting);
+                    defaultHosting.Close();
 
                 if (defaultProxy != null)
-                    _core.Close(defaultProxy);
+                    defaultProxy.Close();
 
                 Helpers.TryCatch(_log,
                     () => core.Stop(),

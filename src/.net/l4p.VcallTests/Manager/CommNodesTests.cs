@@ -24,7 +24,7 @@ namespace l4p.VcallTests.Manager
 
             var counters = vcall.Counters;
 
-            Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
+            Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStarted, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStopped, Is.EqualTo(1));
 
@@ -41,7 +41,7 @@ namespace l4p.VcallTests.Manager
 
             var counters = vcall.Counters;
 
-            Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
+            Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
             Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
             Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
 
@@ -57,7 +57,7 @@ namespace l4p.VcallTests.Manager
 
             var counters = vcall.Counters;
 
-            Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
+            Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStarted, Is.EqualTo(1));
             Assert.That(counters.Hosting_Event_IsStopped, Is.EqualTo(1));
 
@@ -73,7 +73,7 @@ namespace l4p.VcallTests.Manager
 
             var counters = vcall.Counters;
 
-            Assert.That(counters.Vcall_Event_CloseCommNode, Is.EqualTo(1));
+            Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
             Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
             Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
         }

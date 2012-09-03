@@ -8,16 +8,17 @@ copied or duplicated in any form, in whole or in part.
 using System.Collections.Generic;
 using System.Linq;
 using l4p.VcallModel.Core;
+using l4p.VcallModel.HostingPeers;
+using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.VcallSubsystems
 {
     interface IRepository
     {
-        void Add(IHosting node);
-        void Add(IProxy node);
-        void Remove(ICommNode node);
-        ICommNode[] GetNodes();
+        void Add(ICommPeer peer);
+        void Remove(ICommPeer peer);
+        ICommPeer[] GetPeers();
     }
 
     class Repository : IRepository
@@ -29,7 +30,7 @@ namespace l4p.VcallModel.VcallSubsystems
 
         private readonly DebugCounters _counters;
 
-        private List<ICommNode> _nodes;
+        private List<ICommPeer> _peers;
 
         #endregion
 
@@ -44,64 +45,59 @@ namespace l4p.VcallModel.VcallSubsystems
         private Repository()
         {
             _counters = Context.Get<ICountersDb>().NewCounters();
-            _nodes = new List<ICommNode>();
+            _peers = new List<ICommPeer>();
         }
 
         #endregion
 
         #region private
 
-        private void add_node(ICommNode node)
+        private void add_peer(ICommPeer peer)
         {
-            var nodes = _nodes;
+            var peers = _peers;
 
-            var newNodes = new List<ICommNode>(nodes);
-            newNodes.Add(node);
+            var newPeers = new List<ICommPeer>(peers);
+            newPeers.Add(peer);
 
-            _counters.Vcall_State_ActiveNodes++;
+            _counters.Vcall_State_ActivePeers++;
 
-            _nodes = newNodes;
+            _peers = newPeers;
         }
 
-        private void remove_node(ICommNode nodeToRemove)
+        private void remove_peer(ICommPeer peerToRemove)
         {
-            var nodes = _nodes;
+            var peers = _peers;
 
-            var newNodes =
-                from node in nodes
-                where !ReferenceEquals(node, nodeToRemove)
-                select node;
+            var newPeers =
+                from peer in peers
+                where !ReferenceEquals(peer, peerToRemove)
+                select peer;
 
-            _counters.Vcall_State_ActiveNodes--;
+            _counters.Vcall_State_ActivePeers--;
 
-            _nodes = newNodes.ToList();
+            _peers = newPeers.ToList();
         }
 
         #endregion
 
         #region IRepository
 
-        void IRepository.Add(IHosting node)
+        void IRepository.Add(ICommPeer peer)
         {
-            add_node(node);
+            add_peer(peer);
         }
 
-        void IRepository.Add(IProxy node)
+        void IRepository.Remove(ICommPeer peer)
         {
-            add_node(node);
+            remove_peer(peer);
         }
 
-        void IRepository.Remove(ICommNode node)
+        ICommPeer[] IRepository.GetPeers()
         {
-            remove_node(node);
-        }
-
-        ICommNode[] IRepository.GetNodes()
-        {
-            var nodes = _nodes;
+            var peers = _peers;
 
             return
-                nodes.ToArray();
+                peers.ToArray();
         }
 
         #endregion

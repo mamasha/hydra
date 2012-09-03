@@ -45,7 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\ActionQueue.cs" />
-    <Compile Include="Core\CommNode.cs" />
+    <Compile Include="Core\CommPeer.cs" />
     <Compile Include="Core\CountersDb.cs" />
     <Compile Include="Core\DebugCounters.cs" />
     <Compile Include="Core\DurableOperation.cs" />
@@ -55,7 +55,6 @@
     <Compile Include="Core\Janitor.cs" />
     <Compile Include="Core\ActiveThread.cs" />
     <Compile Include="Hostings\Hosting.cs" />
-    <Compile Include="HostingPeers\Manager.cs" />
     <Compile Include="InvokationBusses\InvokationBus.cs" />
     <Compile Include="VcallSubsystems\Engine.cs" />
     <Compile Include="VcallSubsystems\Self.cs" />
@@ -104,7 +103,9 @@
     <Compile Include="VcallConfiguration.cs" />
     <Compile Include="VcallModelException.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="doc\peers_hierarchy.cd" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

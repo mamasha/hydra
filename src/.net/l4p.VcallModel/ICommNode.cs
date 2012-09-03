@@ -19,8 +19,6 @@ namespace l4p.VcallModel
         /// Close this node </summary>
         void Close();
 
-        /// <summary>
-        /// Use Close() instead </summary>
-        void Stop(Internal access, int timeout, IDoneEvent observer);
+        /// 
     }
 }

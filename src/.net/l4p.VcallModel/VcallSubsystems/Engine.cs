@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using System.ServiceModel;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.HostingPeers;
 using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
@@ -15,9 +16,9 @@ namespace l4p.VcallModel.VcallSubsystems
 {
     interface IEngine
     {
-        HostingPeer NewHosting(HostingConfiguration config, VcallSubsystem core);
-        ProxyPeer NewProxy(ProxyConfiguration config, VcallSubsystem core);
-        void CloseNode(int timeout, ICommNode node, IDoneEvent observer);
+        HostingPeer NewHostingPeer(HostingConfiguration config, VcallSubsystem core);
+        ProxyPeer NewProxyPeer(ProxyConfiguration config, VcallSubsystem core);
+        void ClosePeer(int timeout, ICommPeer peer, IDoneEvent observer);
     }
 
     class Engine : IEngine
@@ -71,7 +72,7 @@ namespace l4p.VcallModel.VcallSubsystems
 
         #region IEngine
 
-        HostingPeer IEngine.NewHosting(HostingConfiguration config, VcallSubsystem core)
+        HostingPeer IEngine.NewHostingPeer(HostingConfiguration config, VcallSubsystem core)
             // user arbitrary thread
         {
             var timeout = TimeSpan.FromMilliseconds(_self.vconfig.Timeouts.HostingOpening);
@@ -114,7 +115,7 @@ namespace l4p.VcallModel.VcallSubsystems
             }
         }
 
-        ProxyPeer IEngine.NewProxy(ProxyConfiguration config, VcallSubsystem core)
+        ProxyPeer IEngine.NewProxyPeer(ProxyConfiguration config, VcallSubsystem core)
             // user arbitrary thread
         {
             var timeout = TimeSpan.FromMilliseconds(_self.vconfig.Timeouts.ProxyOpening);
@@ -158,18 +159,18 @@ namespace l4p.VcallModel.VcallSubsystems
             }
         }
 
-        void IEngine.CloseNode(int timeout, ICommNode node, IDoneEvent observer)
+        void IEngine.ClosePeer(int timeout, ICommPeer peer, IDoneEvent observer)
             // user arbitrary thread
         {
             lock (_self.mutex)
             {
-                _self.repo.Remove(node);
-                _self.counters.Vcall_Event_CloseCommNode++;
+                _self.repo.Remove(peer);
+                _self.counters.Vcall_Event_CloseCommPeer++;
             }
 
-            _self.resolver.Cancel(node.Tag);
+            _self.resolver.Cancel(peer.Tag);
 
-            node.Stop(_internalAccess, timeout, observer);
+            peer.Stop(timeout, observer);
         }
 
         #endregion

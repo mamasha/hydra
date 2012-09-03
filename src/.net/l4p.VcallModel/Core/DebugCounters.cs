@@ -18,16 +18,16 @@ namespace l4p.VcallModel.Core
     {
         [DataMember] public int Vcall_Event_NewHosting { get; set; }
         [DataMember] public int Vcall_Event_NewProxy { get; set; }
-        [DataMember] public int Vcall_Event_CloseCommNode { get; set; }
+        [DataMember] public int Vcall_Event_CloseCommPeer { get; set; }
 
         [DataMember] public int Vcall_Error_AddressInUse { get; set; }
         [DataMember] public int Vcall_Error_NewHostingFailed { get; set; }
         [DataMember] public int Vcall_Error_NewProxyFailed { get; set; }
-        [DataMember] public int Vcall_Error_CloseCommNode { get; set; }
+        [DataMember] public int Vcall_Error_CloseCommPeer { get; set; }
         [DataMember] public int Vcall_Error_InternalFailure { get; set; }
 
         [DataMember] public int Vcall_State_DurableOperations { get; set; }
-        [DataMember] public int Vcall_State_ActiveNodes { get; set; }
+        [DataMember] public int Vcall_State_ActivePeers { get; set; }
 
         //----------------------------------------------------------//
 

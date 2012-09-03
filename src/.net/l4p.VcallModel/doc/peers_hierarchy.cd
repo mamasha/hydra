@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="l4p.VcallModel.ProxyPeers.ProxyPeer" Collapsed="true">
+    <Position X="3.75" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAIAAAARCAoEEAAAQQEQAAAEAAgAIAIICCBAAGAAAI=</HashCode>
+      <FileName>ProxyPeers\ProxyPeer.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Orientation="Left" Position="0.13" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.VcallSubsystems.VcallSubsystem" Collapsed="true">
+    <Position X="0.5" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAQgAACAhAAEGAAQgAAAAAEEAEAAAAIAABBAAAAAAQ=</HashCode>
+      <FileName>VcallSubsystems\VcallSubsystem.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Orientation="Right" Position="0.1" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.VcallSubsystems.Repository" Collapsed="true">
+    <Position X="0.75" Y="2.5" Width="1.5" />
+    <AssociationLine Name="_peers" Type="l4p.VcallModel.Core.ICommPeer">
+      <MemberNameLabel ManuallyPlaced="true" ManuallySized="true">
+        <Position X="0.56" Y="-0.265" Height="0.16" Width="0.744" />
+      </MemberNameLabel>
+    </AssociationLine>
+    <TypeIdentifier>
+      <HashCode>wQAAAAAAAAAAAGAAAAAAAAABAAAgAAAAAAAAQAAAGAA=</HashCode>
+      <FileName>VcallSubsystems\Repository.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsCollectionAssociation>
+      <Field Name="_peers" />
+    </ShowAsCollectionAssociation>
+    <Lollipop Orientation="Right" Position="0.1" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.HostingPeers.HostingPeer" Collapsed="true">
+    <Position X="1.75" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAIACAARCCoAEAAAAAEQAAgEEAkAEBAICCBAADCAAA=</HashCode>
+      <FileName>HostingPeers\HostingPeer.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Orientation="Left" Position="0.173" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.Hostings.Hosting" Collapsed="true">
+    <Position X="1.75" Y="4" Width="1.5" />
+    <AssociationLine Name="_peer" Type="l4p.VcallModel.Core.ICommPeer">
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="0.162" Y="0.289" />
+      </MemberNameLabel>
+    </AssociationLine>
+    <TypeIdentifier>
+      <HashCode>gAAIAAAEBAAgAGAAAAAAAAAAAEAAAAAAAAAAQAAAQAA=</HashCode>
+      <FileName>Hostings\Hosting.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="_peer" />
+    </ShowAsAssociation>
+    <Lollipop Orientation="Left" Position="0.103" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.InvokationBusses.InvokationBus" Collapsed="true">
+    <Position X="3.75" Y="4" Width="1.5" />
+    <AssociationLine Name="_peer" Type="l4p.VcallModel.Core.ICommPeer">
+      <MemberNameLabel ManuallyPlaced="true">
+        <Position X="-0.69" Y="0.318" />
+      </MemberNameLabel>
+    </AssociationLine>
+    <TypeIdentifier>
+      <HashCode>gAAIAAAEBAAAAGAAAAAEAAAAAAAACAAAAAAAQAAAQAA=</HashCode>
+      <FileName>InvokationBusses\InvokationBus.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="_peer" />
+    </ShowAsAssociation>
+    <Lollipop Orientation="Left" Position="0.1" Collapsed="true" />
+  </Class>
+  <Class Name="l4p.VcallModel.Core.CommPeer" Collapsed="true">
+    <Position X="2.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAABAAgAAAEAAAAAACAAAAAAAIAAAIAAAAECAEAA=</HashCode>
+      <FileName>Core\CommPeer.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Orientation="Left" Position="0.309" Collapsed="true" />
+  </Class>
+  <Interface Name="l4p.VcallModel.IHosting" Collapsed="true">
+    <Position X="1.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IHosting.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="l4p.VcallModel.IProxy" Collapsed="true">
+    <Position X="3.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IProxy.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="l4p.VcallModel.ICommNode" Collapsed="true">
+    <Position X="2.75" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAACAAAA=</HashCode>
+      <FileName>ICommNode.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="l4p.VcallModel.Core.ICommPeer" Collapsed="true">
+    <Position X="2.75" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Core\CommPeer.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Tahoma" Size="8.25" />
+</ClassDiagram>

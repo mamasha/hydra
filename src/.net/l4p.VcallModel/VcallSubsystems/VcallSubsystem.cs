@@ -28,7 +28,7 @@ namespace l4p.VcallModel.VcallSubsystems
         IHosting NewHosting(HostingConfiguration config = null);
         IProxy NewProxy(ProxyConfiguration config = null);
 
-        void Close(ICommNode node);
+        void Close(ICommPeer peer);
 
         void RunInMyContext(Action action);
 
@@ -116,17 +116,17 @@ namespace l4p.VcallModel.VcallSubsystems
             _log.Warn(msg);
         }
 
-        private void close_comm_nodes(ICommNode[] nodes)
+        private void close_comm_peers(ICommPeer[] peers)
         {
-            int timeout = _self.vconfig.Timeouts.NodeClosing;
+            int timeout = _self.vconfig.Timeouts.PeerClosing;
             int wcfTimeout = _self.vconfig.Timeouts.WcfHostClosing;
 
-            var observer = DoneEvent.New(nodes.Length);
+            var observer = DoneEvent.New(peers.Length);
 
-            foreach (var node in nodes)
+            foreach (var peer in peers)
             {
-                trace("closing node.{0}", node.Tag);
-                _engine.CloseNode(wcfTimeout, node, observer);
+                trace("closing peer.{0}", peer.Tag);
+                _engine.ClosePeer(wcfTimeout, peer, observer);
             }
 
             if (observer.Wait(timeout) == false)
@@ -134,19 +134,19 @@ namespace l4p.VcallModel.VcallSubsystems
                 int notReadyCount = observer.NotReadyCount;
 
                 lock (_self.mutex)
-                    _self.counters.Vcall_Error_CloseCommNode += notReadyCount;
+                    _self.counters.Vcall_Error_CloseCommPeer += notReadyCount;
 
                 if (notReadyCount == 1)
-                    warn("Failed to stop node.{0} (timeout={1})", nodes[0].Tag, timeout);
+                    warn("Failed to stop peer.{0} (timeout={1})", peers[0].Tag, timeout);
                 else
-                    warn("Failed to stop {0} nodes (timeout={1})", notReadyCount, timeout);
+                    warn("Failed to stop {0} peers (timeout={1})", notReadyCount, timeout);
             }
             else
             {
-                if (nodes.Length == 1)
-                    trace("node.{0} is closed", nodes[0].Tag);
+                if (peers.Length == 1)
+                    trace("peer.{0} is closed", peers[0].Tag);
                 else
-                    trace("{0} nodes are closed", nodes.Length);
+                    trace("{0} peers are closed", peers.Length);
             }
 
         }
@@ -170,12 +170,12 @@ namespace l4p.VcallModel.VcallSubsystems
 
         void IVcallSubsystem.Stop()
         {
-            var nodes = _self.repo.GetNodes();
+            var peers = _self.repo.GetPeers();
 
-            if (nodes.Length > 0)
+            if (peers.Length > 0)
             {
-                warn("Stop(): There are {0} active nodes", nodes.Length);
-                close_comm_nodes(nodes);
+                warn("Stop(): There are {0} active peers", peers.Length);
+                close_comm_peers(peers);
             }
 
             _self.resolver.Cancel(_connectivityTag);
@@ -194,30 +194,28 @@ namespace l4p.VcallModel.VcallSubsystems
             if (config.HostingRole == null) config.HostingRole = _self.vconfig.HostingRole;
             if (config.SubscribeToProxy_RetryTimeout == null) config.SubscribeToProxy_RetryTimeout = _self.vconfig.Timeouts.ProxyHostingSubscriptionRetry;
 
-            HostingPeer hosting;
+            HostingPeer peer;
 
             using (Context.With(_countersDb))
             {
-                hosting = _engine.NewHosting(config, this);
+                peer = _engine.NewHostingPeer(config, this);
             }
 
-            string callbackUri = hosting.ListeningUri;
+            string callbackUri = peer.ListeningUri;
 
-            _self.resolver.Publish(callbackUri, config.HostingRole, hosting.Tag);
-            _self.resolver.Subscribe(hosting.OnProxyDiscovery, hosting.Tag);
+            _self.resolver.Publish(callbackUri, config.HostingRole, peer.Tag);
+            _self.resolver.Subscribe(peer.HandlePublisher, peer.Tag);
 
             lock (_self.mutex)
             {
-                _self.repo.Add(hosting);
+                _self.repo.Add(peer);
                 _self.counters.Vcall_Event_NewHosting++;
             }
 
-            trace("hostring.{0} is started", hosting.Tag);
+            trace("hostring.{0} is started", peer.Tag);
 
             return
-                Hosting.New(config);
-
-            return hosting;
+                Hosting.New(peer, this, config);
         }
 
         IProxy IVcallSubsystem.NewProxy(ProxyConfiguration config)
@@ -231,36 +229,34 @@ namespace l4p.VcallModel.VcallSubsystems
             if (config.NonRegisteredCall == NonRegisteredCallPolicy.Default) config.NonRegisteredCall = _self.vconfig.NonRegisteredCall;
             if (config.SubscribeToHosting_RetryTimeout == null) config.SubscribeToHosting_RetryTimeout = _self.vconfig.Timeouts.ProxyHostingSubscriptionRetry;
 
-            ProxyPeer proxy;
+            ProxyPeer peer;
 
             using (Context.With(_countersDb))
             {
-                proxy = _engine.NewProxy(config, this);
+                peer = _engine.NewProxyPeer(config, this);
             }
 
-            string callbackUri = proxy.ListeningUri;
+            string callbackUri = peer.ListeningUri;
 
-            _self.resolver.Publish(callbackUri, config.ProxyRole, proxy.Tag);
-            _self.resolver.Subscribe(proxy.OnHostingDiscovery, proxy.Tag);
+            _self.resolver.Publish(callbackUri, config.ProxyRole, peer.Tag);
+            _self.resolver.Subscribe(peer.HandlePublisher, peer.Tag);
 
             lock (_self.mutex)
             {
-                _self.repo.Add(proxy);
+                _self.repo.Add(peer);
                 _self.counters.Vcall_Event_NewProxy++;
             }
 
-            trace("proxy.{0} is started", proxy.Tag);
+            trace("proxy.{0} is started", peer.Tag);
 
             return
-                InvokationBus.New(config);
-
-            return proxy;
+                InvokationBus.New(peer, this, config);
         }
 
-        void IVcallSubsystem.Close(ICommNode node)
+        void IVcallSubsystem.Close(ICommPeer peer)
             // user arbitrary thread
         {
-            close_comm_nodes(new[] {node});
+            close_comm_peers(new[] {peer});
         }
 
         void IVcallSubsystem.RunInMyContext(Action action)

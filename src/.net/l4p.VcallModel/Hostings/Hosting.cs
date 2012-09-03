@@ -6,7 +6,9 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
+using l4p.VcallModel.Core;
 using l4p.VcallModel.Utils;
+using l4p.VcallModel.VcallSubsystems;
 
 namespace l4p.VcallModel.Hostings
 {
@@ -17,20 +19,24 @@ namespace l4p.VcallModel.Hostings
         private static readonly ILogger _log = Logger.New<Hosting>();
         private static readonly IHelpers Helpers = HelpersInUse.All;
 
-        private HostingConfiguration _config;
+        private readonly ICommPeer _peer;
+        private readonly IVcallSubsystem _vcall;
+        private readonly HostingConfiguration _config;
 
         #endregion
 
         #region construction
 
-        public static IHosting New(HostingConfiguration config)
+        public static IHosting New(ICommPeer peer, IVcallSubsystem vcall, HostingConfiguration config)
         {
             return
-                new Hosting(config);
+                new Hosting(peer, vcall, config);
         }
 
-        private Hosting(HostingConfiguration config)
+        private Hosting(ICommPeer peer, IVcallSubsystem vcall, HostingConfiguration config)
         {
+            _peer = peer;
+            _vcall = vcall;
             _config = config;
         }
 
@@ -40,17 +46,12 @@ namespace l4p.VcallModel.Hostings
 
         string ICommNode.Tag
         {
-            get { throw new NotImplementedException(); }
+            get { return _peer.Tag; }
         }
 
         void ICommNode.Close()
         {
-            throw new NotImplementedException();
-        }
-
-        void ICommNode.Stop(Internal access, int timeout, IDoneEvent observer)
-        {
-            throw new NotImplementedException();
+            _vcall.Close(_peer);
         }
 
         #endregion
@@ -59,42 +60,48 @@ namespace l4p.VcallModel.Hostings
 
         void IHosting.Host(Action action)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IHosting.Host<R>(Func<R> func)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IHosting.Host<T1, T2>(string actionName, Action<T1, T2> action)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         R IHosting.Host<T1, T2, R>(string funcName, Func<T1, T2, R> func)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IHosting.Host<T1, T2>(Action<T1, T2> action)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IHosting.Host<T1, R>(Func<T1, R> func)
         {
-            throw new NotImplementedException();
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         void IHosting.Host<T1, T2, R>(Func<T1, T2, R> func)
         {
-            throw new NotImplementedException();
+            throw Helpers.NewNotImplementedException();
         }
 
         string IHosting.ListeningUri
         {
-            get { throw new NotImplementedException(); }
+            get { throw Helpers.NewNotImplementedException(); }
         }
 
         #endregion

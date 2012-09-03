@@ -15,8 +15,7 @@ using l4p.VcallModel.VcallSubsystems;
 namespace l4p.VcallModel.HostingPeers
 {
     class HostingPeer 
-        : CommNode
-        , IHostingPeer, IHosting
+        : CommPeer, IHostingPeer
     {
         #region members
 
@@ -258,7 +257,7 @@ namespace l4p.VcallModel.HostingPeers
             get { return _tag; }
         }
 
-        public void OnProxyDiscovery(string callbackUri, string role, bool alive)
+        public void HandlePublisher(string callbackUri, string role, bool alive)
             // discovery thread
         {
             if (role != _config.ProxyRole)
@@ -320,56 +319,5 @@ namespace l4p.VcallModel.HostingPeers
         }
 
         #endregion
-
-        #region IHosting
-
-        void IHosting.Host(Action action)
-        {
-            _thr.PostAction(
-                () => start_hosting_of(action));
-        }
-
-        void IHosting.Host<R>(Func<R> func)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        void IHosting.Host<T1, T2>(string actionName, Action<T1, T2> action)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        R IHosting.Host<T1, T2, R>(string funcName, Func<T1, T2, R> func)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        void IHosting.Host<T1, T2>(Action<T1, T2> action)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        void IHosting.Host<T1, R>(Func<T1, R> func)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        void IHosting.Host<T1, T2, R>(Func<T1, T2, R> func)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        string IHosting.ListeningUri
-        {
-            get { return _listeningUri; }
-        }
-
-       #endregion
     }
 }

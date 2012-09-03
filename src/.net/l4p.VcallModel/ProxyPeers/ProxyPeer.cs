@@ -16,8 +16,7 @@ using l4p.VcallModel.VcallSubsystems;
 namespace l4p.VcallModel.ProxyPeers
 {
     class ProxyPeer 
-        : CommNode
-        , IProxyPeer, IProxy
+        : CommPeer, IProxyPeer
     {
         #region members
 
@@ -248,7 +247,7 @@ namespace l4p.VcallModel.ProxyPeers
             get { return _tag; }
         }
 
-        public void OnHostingDiscovery(string callbackUri, string role, bool alive)
+        public void HandlePublisher(string callbackUri, string role, bool alive)
             // discovery thread
         {
             if (role != _config.HostingRole)
@@ -307,37 +306,6 @@ namespace l4p.VcallModel.ProxyPeers
         {
             _thr.PostAction(
                 () => cancel_hosting(hostingTag), "Canceling hosting.{0}", hostingTag);
-        }
-
-        #endregion
-
-        #region IProxy
-
-        void IProxy.Call(Expression<Action> vcall)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        R IProxy.Call<R>(Expression<Func<R>> vcall)
-        {
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        void IProxy.Call(string methodName, params object[] args)
-        {
-            throw
-                Helpers.MakeNew<VcallException>(null, _log, "'{0}' There is no registered proxies for subject '{1}'", "resolving key", methodName);
-
-            throw
-                Helpers.NewNotImplementedException();
-        }
-
-        R IProxy.Call<R>(string functionName, params object[] args)
-        {
-            throw
-                Helpers.NewNotImplementedException();
         }
 
         #endregion

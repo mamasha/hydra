@@ -46,7 +46,7 @@ namespace l4p.VcallModel.Configuration
         public int DiscoveryClosing { get; set; }
         public int HostingOpening { get; set; }
         public int ProxyOpening { get; set; }
-        public int NodeClosing { get; set; }
+        public int PeerClosing { get; set; }
         public int WcfHostClosing { get; set; }
         public int ProxyHostingSubscriptionRetry { get; set; }
 
@@ -62,7 +62,7 @@ namespace l4p.VcallModel.Configuration
             DiscoveryOpening = 5*1000;
             DiscoveryClosing = 10*1000;
             HostingOpening = 5*1000;
-            NodeClosing = 10*1000;
+            PeerClosing = 10*1000;
             WcfHostClosing = 5*1000;
             ProxyOpening = 5*1000;
             ProxyHostingSubscriptionRetry = 1*1000;
