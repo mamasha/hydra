@@ -32,7 +32,7 @@ namespace l4p.VcallModel.HostingPeers.Channels
             _channel = new WcfChannel(binding, epoint);
 
             lock (_mutex)
-                _counters.Hosting_Event_NewWcfChannel++;
+                _counters.HostingPeer_Event_NewWcfChannel++;
         }
 
         private void call(Action action)
@@ -48,7 +48,7 @@ namespace l4p.VcallModel.HostingPeers.Channels
                 _channel = null;
 
                 lock (_mutex)
-                    _counters.Hosting_Error_ProxyCalls++;
+                    _counters.HostingPeer_Error_ProxyCalls++;
 
                 throw;
             }

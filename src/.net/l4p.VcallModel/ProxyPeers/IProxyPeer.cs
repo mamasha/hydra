@@ -6,9 +6,7 @@ copied or duplicated in any form, in whole or in part.
 */
 
 using System;
-using System.Runtime.Serialization;
 using System.ServiceModel;
-using l4p.VcallModel.HostingPeers;
 
 namespace l4p.VcallModel.ProxyPeers
 {
@@ -17,17 +15,6 @@ namespace l4p.VcallModel.ProxyPeers
         public ProxyPeerException() { }
         public ProxyPeerException(string message) : base(message) { }
         public ProxyPeerException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [DataContract]
-    class HostingInfo
-    {
-        [DataMember] public string Tag { get; set; }
-        [DataMember] public string CallbackUri { get; set; }
-        [DataMember] public string NameSpace { get; set; }
-        [DataMember] public string HostName { get; set; }
-
-        public IHostingPeer Proxy { get; set; }
     }
 
     [ServiceContract]

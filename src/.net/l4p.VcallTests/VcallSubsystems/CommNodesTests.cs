@@ -9,7 +9,7 @@ using System;
 using l4p.VcallModel.VcallSubsystems;
 using NUnit.Framework;
 
-namespace l4p.VcallTests.Manager
+namespace l4p.VcallTests.VcallSubsystems
 {
     [TestFixture]
     class CommNodesTests
@@ -25,8 +25,8 @@ namespace l4p.VcallTests.Manager
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
-            Assert.That(counters.Hosting_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Hosting_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.HostingPeer_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.HostingPeer_Event_IsStopped, Is.EqualTo(1));
 
             vcall.Stop();
         }
@@ -42,8 +42,8 @@ namespace l4p.VcallTests.Manager
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
-            Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.ProxyPeer_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.ProxyPeer_Event_IsStopped, Is.EqualTo(1));
 
             vcall.Stop();
         }
@@ -58,8 +58,8 @@ namespace l4p.VcallTests.Manager
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
-            Assert.That(counters.Hosting_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Hosting_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.HostingPeer_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.HostingPeer_Event_IsStopped, Is.EqualTo(1));
 
             Console.WriteLine(counters);
         }
@@ -74,8 +74,8 @@ namespace l4p.VcallTests.Manager
             var counters = vcall.Counters;
 
             Assert.That(counters.Vcall_Event_CloseCommPeer, Is.EqualTo(1));
-            Assert.That(counters.Proxy_Event_IsStarted, Is.EqualTo(1));
-            Assert.That(counters.Proxy_Event_IsStopped, Is.EqualTo(1));
+            Assert.That(counters.ProxyPeer_Event_IsStarted, Is.EqualTo(1));
+            Assert.That(counters.ProxyPeer_Event_IsStopped, Is.EqualTo(1));
         }
     }
 }

@@ -56,7 +56,7 @@
     </ShowAsAssociation>
     <Lollipop Orientation="Left" Position="0.103" Collapsed="true" />
   </Class>
-  <Class Name="l4p.VcallModel.InvokationBusses.InvokationBus" Collapsed="true">
+  <Class Name="l4p.VcallModel.InvocationBusses.InvocationBus" Collapsed="true">
     <Position X="3.75" Y="4" Width="1.5" />
     <AssociationLine Name="_peer" Type="l4p.VcallModel.Core.ICommPeer">
       <MemberNameLabel ManuallyPlaced="true">
@@ -65,7 +65,7 @@
     </AssociationLine>
     <TypeIdentifier>
       <HashCode>gAAIAAAEBAAAAGAAAAAEAAAAAAAACAAAAAAAQAAAQAA=</HashCode>
-      <FileName>InvokationBusses\InvokationBus.cs</FileName>
+      <FileName>InvocationBusses\InvocationBus.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
       <Field Name="_peer" />

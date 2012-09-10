@@ -7,6 +7,7 @@ copied or duplicated in any form, in whole or in part.
 
 using System;
 using l4p.VcallModel.Core;
+using l4p.VcallModel.HostingPeers;
 using l4p.VcallModel.Utils;
 using l4p.VcallModel.VcallSubsystems;
 
@@ -22,22 +23,48 @@ namespace l4p.VcallModel.Hostings
         private readonly ICommPeer _peer;
         private readonly IVcallSubsystem _vcall;
         private readonly HostingConfiguration _config;
+        private readonly DebugCounters _counters;
 
         #endregion
 
         #region construction
 
-        public static IHosting New(ICommPeer peer, IVcallSubsystem vcall, HostingConfiguration config)
-        {
-            return
-                new Hosting(peer, vcall, config);
-        }
-
-        private Hosting(ICommPeer peer, IVcallSubsystem vcall, HostingConfiguration config)
+        public Hosting(ICommPeer peer, IVcallSubsystem vcall, HostingConfiguration config)
         {
             _peer = peer;
             _vcall = vcall;
             _config = config;
+            _counters = Context.Get<ICountersDb>().NewCounters();
+        }
+
+        #endregion
+
+        #region private
+
+        private void trace(string format, params object[] args)
+        {
+            if (_log.TraceIsOff)
+                return;
+
+            string msg = Helpers.SafeFormat(format, args);
+            _log.Trace("host.{0}: {1}", _peer.Tag, msg);
+        }
+
+        #endregion
+
+        #region public api
+
+        public void HandleNewProxy(ProxyInfo info)
+        {
+            if (info.NameSpace != _config.NameSpace)
+            {
+                trace("Not a my namespace proxy.{0} (namespace='{1}'); mine='{2}'", info.Tag, info.NameSpace, _config.NameSpace);
+                _counters.Hosting_Event_NotMyNamespace++;
+                return;
+            }
+
+            throw
+                Helpers.NewNotImplementedException();
         }
 
         #endregion

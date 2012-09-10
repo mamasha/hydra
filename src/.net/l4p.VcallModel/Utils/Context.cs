@@ -16,6 +16,7 @@ namespace l4p.VcallModel.Utils
         T Get<T>();
         void Push<T>(T value);
         void Pop<T>();
+        void Clear();
     }
 
     class TypedStacks : ITypedStacks
@@ -41,7 +42,7 @@ namespace l4p.VcallModel.Utils
 
         #endregion
 
-        #region Implementation of ITypedStacks
+        #region ITypedStacks
 
         T ITypedStacks.Get<T>()
         {
@@ -85,10 +86,8 @@ namespace l4p.VcallModel.Utils
             Type type = typeof(T);
             Stack<object> stack;
 
-            switch (true)
+            for (;;)
             {
-                case true:
-
                 if (_db.TryGetValue(type, out stack) == false)
                     break;
 
@@ -97,10 +96,15 @@ namespace l4p.VcallModel.Utils
 
                 stack.Pop();
                 return;
-            }
+            } 
 
             throw
                 new ContextException(String.Format("No value of type '{0}' can be popped", type.Name));
+        }
+
+        void ITypedStacks.Clear()
+        {
+            _db.Clear();
         }
 
         #endregion
@@ -157,6 +161,11 @@ namespace l4p.VcallModel.Utils
         {
             return
                 _typedStacks.Value.Get<T>();
+        }
+
+        public static void Clear()
+        {
+            _typedStacks.Value.Clear();
         }
 
         #endregion

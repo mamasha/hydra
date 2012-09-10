@@ -84,7 +84,7 @@ namespace l4p.VcallModel.HostingPeers
         void IRepository.AddProxy(ProxyInfo info)
         {
             _proxies[info.Tag] = info;
-            _counters.Hosting_State_AliveProxies++;
+            _counters.HostingPeer_State_AliveProxies++;
         }
 
         void IRepository.RemoveProxy(ProxyInfo info)
@@ -92,7 +92,7 @@ namespace l4p.VcallModel.HostingPeers
             bool wasThere = _proxies.Remove(info.Tag);
 
             if (wasThere)
-                _counters.Hosting_State_AliveProxies--;
+                _counters.HostingPeer_State_AliveProxies--;
         }
 
         ProxyInfo IRepository.FindProxy(string tag)

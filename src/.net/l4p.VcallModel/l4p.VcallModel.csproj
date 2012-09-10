@@ -54,8 +54,10 @@
     <Compile Include="Core\IRevertable.cs" />
     <Compile Include="Core\Janitor.cs" />
     <Compile Include="Core\ActiveThread.cs" />
+    <Compile Include="HostingPeers\ProxyInfo.cs" />
     <Compile Include="Hostings\Hosting.cs" />
-    <Compile Include="InvokationBusses\InvokationBus.cs" />
+    <Compile Include="InvocationBusses\InvokationBus.cs" />
+    <Compile Include="ProxyPeers\HostingInfo.cs" />
     <Compile Include="VcallSubsystems\Engine.cs" />
     <Compile Include="VcallSubsystems\Self.cs" />
     <Compile Include="HostingPeers\Channels\ContextualHost.cs" />

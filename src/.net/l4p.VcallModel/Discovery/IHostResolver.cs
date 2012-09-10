@@ -26,7 +26,7 @@ namespace l4p.VcallModel.Discovery
         public HostResolverException(string message, Exception inner) : base(message, inner) { }
     }
 
-    delegate void PubSubEvent(string callbackUri, string role, bool alive);
+    delegate void PubSubHandler(string callbackUri, string role, bool alive);
 
     interface IHostResolver
     {
@@ -34,7 +34,7 @@ namespace l4p.VcallModel.Discovery
         void Stop();
 
         void Publish(string callbackUri, string role, string tag);
-        void Subscribe(PubSubEvent onPubSub, string tag);
+        void Subscribe(PubSubHandler onPubSub, string tag);
         void Cancel(string tag);
     }
 }

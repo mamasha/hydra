@@ -14,6 +14,8 @@ using l4p.VcallModel.VcallSubsystems;
 
 namespace l4p.VcallModel.HostingPeers
 {
+    delegate void NewProxyHandler(ProxyInfo info);
+
     class HostingPeer 
         : CommPeer, IHostingPeer
     {
@@ -26,8 +28,9 @@ namespace l4p.VcallModel.HostingPeers
         private readonly IVcallSubsystem _core;
 
         private readonly IRepository _repo;
-        private readonly IWcfHostring _wcf;
+        private readonly IWcfHosting _wcf;
         private readonly IActiveThread _thr;
+        private event NewProxyHandler _onNewProxy;
 
         private string _listeningUri;
 
@@ -35,7 +38,7 @@ namespace l4p.VcallModel.HostingPeers
 
         #region construction
 
-        public HostingPeer(HostingConfiguration config, VcallSubsystem core)
+        public HostingPeer(HostingConfiguration config, IVcallSubsystem core)
         {
             _config = config;
             _core = core;
@@ -129,44 +132,29 @@ namespace l4p.VcallModel.HostingPeers
 
             try_catch(
                 () => proxy.SubscribeHosting(myInfo),
-                () => ++_counters.Hosting_Error_SubscribeToProxy, "hosting.{0}: Failed to subscribe self at host '{1}'", _tag, callbackUri);
+                () => ++_counters.HostingPeer_Error_SubscribeToProxy, "hosting.{0}: Failed to subscribe self at host '{1}'", _tag, callbackUri);
 
-            _counters.Hosting_Event_SubscribedToProxy++;
+            _counters.HostingPeer_Event_SubscribedToProxy++;
             trace("subscribed to proxy at '{0}' (proxies={1})", callbackUri, _repo.ProxyCount);
-        }
-
-        private void update_proxy_peer(ProxyInfo info)
-        {
-            // generate update messages
-            int count = 0;
-
-            trace("{0} update messages are generated", count);
         }
 
         private void subscribe_proxy(ProxyInfo info)
         {
             trace("Got a new proxy.{0} (namespace='{1}') at '{2}'", info.Tag, info.NameSpace, info.ListeningUri);
 
-            if (info.NameSpace != _config.NameSpace)
-            {
-                trace("Not a my namespace proxy.{0} (namespace='{1}'); mine='{2}'", info.Tag, info.NameSpace, _config.NameSpace);
-                _counters.Hosting_Event_NotMyNamespace++;
-                return;
-            }
-
             if (_repo.HasProxy(info.Tag))
             {
                 trace("proxy.{0} at {1} is already registered", info.Tag, info.ListeningUri);
-                _counters.Hosting_Event_KnownProxy++;
+                _counters.HostingPeer_Event_KnownProxy++;
                 return;
             }
 
             info.Proxy = Channels.ProxyPeer.New(info.ListeningUri);
 
             _repo.AddProxy(info);
-            _counters.Hosting_Event_NewProxy++;
+            _counters.HostingPeer_Event_NewProxy++;
 
-            update_proxy_peer(info);
+            publish_new_proxy(info);
         }
 
         private void cancel_proxy(string proxyTag)
@@ -176,12 +164,12 @@ namespace l4p.VcallModel.HostingPeers
             if (info == null)
             {
                 trace("unknown proxy.{0}", proxyTag);
-                _counters.Hosting_Event_UnknownProxy++;
+                _counters.HostingPeer_Event_UnknownProxy++;
                 return;
             }
 
             _repo.RemoveProxy(info);
-            _counters.Hosting_Event_CanceledProxy++;
+            _counters.HostingPeer_Event_CanceledProxy++;
 
             trace("proxy.{0} is canceled", proxyTag);
         }
@@ -193,7 +181,7 @@ namespace l4p.VcallModel.HostingPeers
 
             if (_state == State.Stopped)
             {
-                _counters.Hosting_Event_IsAlreadyStopped++;
+                _counters.HostingPeer_Event_IsAlreadyStopped++;
                 return;
             }
 
@@ -224,16 +212,21 @@ namespace l4p.VcallModel.HostingPeers
             trace("stopping... wcf peers are stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
             _thr.SetStopSignal();
-            _counters.Hosting_Event_IsStopped++;
+            _counters.HostingPeer_Event_IsStopped++;
 
             trace("hosting is stopped (in {0} msecs)", timer.ElapsedMilliseconds);
 
             observer.Signal();
         }
 
-        private void start_hosting_of(Action action)
+        private void publish_new_proxy(ProxyInfo info)
         {
-            
+            var onNewProxy = _onNewProxy;
+
+            if (onNewProxy == null)
+                return;
+
+            onNewProxy(info);
         }
 
         #region public api
@@ -249,7 +242,7 @@ namespace l4p.VcallModel.HostingPeers
             _thr.Start();
 
             _state = State.Started;
-            _counters.Hosting_Event_IsStarted++;
+            _counters.HostingPeer_Event_IsStarted++;
         }
 
         public string Tag
@@ -268,20 +261,25 @@ namespace l4p.VcallModel.HostingPeers
                 _thr.PostAction(
                     () => handle_proxy_hello(callbackUri), "handling hello from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_HelloFromProxy++;
+                _counters.HostingPeer_Event_HelloFromProxy++;
             }
             else
             {
                 _thr.PostAction(
                     () => handle_proxy_bye(callbackUri), "handling bye from {0}.{1}", role, callbackUri);
 
-                _counters.Hosting_Event_ByeFromProxy++;
+                _counters.HostingPeer_Event_ByeFromProxy++;
             }
         }
 
         public string ListeningUri
         {
             get { return _listeningUri; }
+        }
+
+        public void Subscribe(NewProxyHandler handler)
+        {
+            _onNewProxy += handler;
         }
 
         #endregion

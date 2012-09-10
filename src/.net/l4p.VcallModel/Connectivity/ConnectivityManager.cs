@@ -16,7 +16,7 @@ namespace l4p.VcallModel.Connectivity
         void Start();
         void Stop();
 
-        void Subscribe(PubSubEvent onPubSub);
+        void Subscribe(PubSubHandler onPubSub);
 
         void NotifyPubSubMsg(string callbackUri, string role, bool alive);
         void NotifyConnectionFailure();
@@ -69,7 +69,7 @@ namespace l4p.VcallModel.Connectivity
             trace("connectivity is stopped");
         }
 
-        void IConnectivity.Subscribe(PubSubEvent onPubSub)
+        void IConnectivity.Subscribe(PubSubHandler onPubSub)
         {
             throw new NotImplementedException();
         }

@@ -12,7 +12,7 @@ using l4p.VcallModel.Core;
 using l4p.VcallModel.Discovery;
 using l4p.VcallModel.HostingPeers;
 using l4p.VcallModel.Hostings;
-using l4p.VcallModel.InvokationBusses;
+using l4p.VcallModel.InvocationBusses;
 using l4p.VcallModel.ProxyPeers;
 using l4p.VcallModel.Utils;
 
@@ -212,10 +212,12 @@ namespace l4p.VcallModel.VcallSubsystems
                 _self.counters.Vcall_Event_NewHosting++;
             }
 
-            trace("hostring.{0} is started", peer.Tag);
+            trace("hosting.{0} is started", peer.Tag);
 
-            return
-                Hosting.New(peer, this, config);
+            var hosting = new Hosting(peer, this, config);
+            peer.Subscribe(hosting.HandleNewProxy);
+
+            return hosting;
         }
 
         IProxy IVcallSubsystem.NewProxy(ProxyConfiguration config)
@@ -249,8 +251,10 @@ namespace l4p.VcallModel.VcallSubsystems
 
             trace("proxy.{0} is started", peer.Tag);
 
-            return
-                InvokationBus.New(peer, this, config);
+            var ibus = new InvocationBus(peer, this, config);
+            peer.Subscribe(ibus.HandleNewHosting);
+
+            return ibus;
         }
 
         void IVcallSubsystem.Close(ICommPeer peer)

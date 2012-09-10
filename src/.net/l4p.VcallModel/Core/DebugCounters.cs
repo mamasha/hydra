@@ -46,43 +46,49 @@ namespace l4p.VcallModel.Core
 
         //----------------------------------------------------------//
 
-        [DataMember] public int Proxy_Event_IsStarted { get; set; }
-        [DataMember] public int Proxy_Event_IsStopped { get; set; }
-        [DataMember] public int Proxy_Event_IsAlreadyStopped { get; set; }
-        [DataMember] public int Proxy_Event_HelloFromHosting { get; set; }
-        [DataMember] public int Proxy_Event_ByeFromHosting { get; set; }
-        [DataMember] public int Proxy_Event_NewHosting { get; set; }
-        [DataMember] public int Proxy_Event_CanceledHosting { get; set; }
-        [DataMember] public int Proxy_Event_KnownHosting { get; set; }
-        [DataMember] public int Proxy_Event_UnknownHosting { get; set; }
-        [DataMember] public int Proxy_Event_SubscribedToHosting { get; set; }
-        [DataMember] public int Proxy_Event_NewWcfChannel { get; set; }
-        [DataMember] public int Proxy_Event_NotMyNamespace { get; set; }
+        [DataMember] public int ProxyPeer_Event_IsStarted { get; set; }
+        [DataMember] public int ProxyPeer_Event_IsStopped { get; set; }
+        [DataMember] public int ProxyPeer_Event_IsAlreadyStopped { get; set; }
+        [DataMember] public int ProxyPeer_Event_HelloFromHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_ByeFromHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_NewHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_CanceledHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_KnownHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_UnknownHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_SubscribedToHosting { get; set; }
+        [DataMember] public int ProxyPeer_Event_NewWcfChannel { get; set; }
 
-        [DataMember] public int Proxy_Error_SubscribeToHosting { get; set; }
-        [DataMember] public int Proxy_Error_HostingCalls { get; set; }
+        [DataMember] public int ProxyPeer_Error_SubscribeToHosting { get; set; }
+        [DataMember] public int ProxyPeer_Error_HostingCalls { get; set; }
 
-        [DataMember] public int Proxy_State_AliveHostings { get; set; }
+        [DataMember] public int ProxyPeer_State_AliveHostings { get; set; }
 
         //----------------------------------------------------------//
 
-        [DataMember] public int Hosting_Event_IsStarted { get; set; }
-        [DataMember] public int Hosting_Event_IsStopped { get; set; }
-        [DataMember] public int Hosting_Event_IsAlreadyStopped { get; set; }
-        [DataMember] public int Hosting_Event_HelloFromProxy { get; set; }
-        [DataMember] public int Hosting_Event_ByeFromProxy { get; set; }
-        [DataMember] public int Hosting_Event_NewProxy { get; set; }
-        [DataMember] public int Hosting_Event_CanceledProxy { get; set; }
-        [DataMember] public int Hosting_Event_KnownProxy { get; set; }
-        [DataMember] public int Hosting_Event_UnknownProxy { get; set; }
-        [DataMember] public int Hosting_Event_SubscribedToProxy { get; set; }
-        [DataMember] public int Hosting_Event_NewWcfChannel { get; set; }
+        [DataMember] public int HostingPeer_Event_IsStarted { get; set; }
+        [DataMember] public int HostingPeer_Event_IsStopped { get; set; }
+        [DataMember] public int HostingPeer_Event_IsAlreadyStopped { get; set; }
+        [DataMember] public int HostingPeer_Event_HelloFromProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_ByeFromProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_NewProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_CanceledProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_KnownProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_UnknownProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_SubscribedToProxy { get; set; }
+        [DataMember] public int HostingPeer_Event_NewWcfChannel { get; set; }
+
+        [DataMember] public int HostingPeer_Error_SubscribeToProxy { get; set; }
+        [DataMember] public int HostingPeer_Error_ProxyCalls { get; set; }
+
+        [DataMember] public int HostingPeer_State_AliveProxies { get; set; }
+
+        //----------------------------------------------------------//
+
+        [DataMember] public int InvocationBus_Event_NotMyNamespace { get; set; }
+
+        //----------------------------------------------------------//
+
         [DataMember] public int Hosting_Event_NotMyNamespace { get; set; }
-
-        [DataMember] public int Hosting_Error_SubscribeToProxy { get; set; }
-        [DataMember] public int Hosting_Error_ProxyCalls { get; set; }
-
-        [DataMember] public int Hosting_State_AliveProxies { get; set; }
 
         //----------------------------------------------------------//
 

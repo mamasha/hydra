@@ -118,7 +118,7 @@ namespace l4p.VcallModel.Discovery
             publish(publisher);
         }
 
-        void IHostResolver.Subscribe(PubSubEvent onPubSub, string tag)
+        void IHostResolver.Subscribe(PubSubHandler onPubSub, string tag)
         {
             var subscriber = new Subscriber
                                  {

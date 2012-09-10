@@ -12,20 +12,20 @@ using l4p.VcallModel.Utils;
 
 namespace l4p.VcallModel.HostingPeers
 {
-    public class WcfHostringException : VcallModelException
+    public class WcfHostingException : VcallModelException
     {
-        public WcfHostringException() { }
-        public WcfHostringException(string message) : base(message) { }
-        public WcfHostringException(string message, Exception inner) : base(message, inner) { }
+        public WcfHostingException() { }
+        public WcfHostingException(string message) : base(message) { }
+        public WcfHostingException(string message, Exception inner) : base(message, inner) { }
     }
 
-    interface IWcfHostring
+    interface IWcfHosting
     {
         string Start(string uri, TimeSpan timeout);
         void Stop(TimeSpan timeout);
     }
 
-    class WcfHosting : IWcfHostring
+    class WcfHosting : IWcfHosting
     {
         #region members
 
@@ -42,18 +42,18 @@ namespace l4p.VcallModel.HostingPeers
         {
             Helpers.TryCatch(_log,
                 () => _host = new ContextualHost(peer),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
+                ex => Helpers.ThrowNew<WcfHostingException>(ex, _log, "Failed to create hosting for '{0}'", typeof(IHostingPeer).Name));
         }
 
         #endregion
 
-        #region IWcfHostring
+        #region IWcfHosting
 
-        string IWcfHostring.Start(string uri, TimeSpan timeout)
+        string IWcfHosting.Start(string uri, TimeSpan timeout)
         {
             Helpers.TryCatch(_log,
                 () => _host.AddServiceEndpoint(typeof(IHostingPeer), new TcpStreamBindng(), uri),
-                ex => Helpers.ThrowNew<WcfHostringException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
+                ex => Helpers.ThrowNew<WcfHostingException>(ex, _log, "Failed to add end point with uri '{0}'", uri));
 
             Helpers.TimedAction(
                 () => _host.Open(timeout), "Failed to open hosting service in {0} millis", timeout.TotalMilliseconds);
@@ -63,7 +63,7 @@ namespace l4p.VcallModel.HostingPeers
             return listeningUri.ToString();
         }
 
-        void IWcfHostring.Stop(TimeSpan timeout)
+        void IWcfHosting.Stop(TimeSpan timeout)
         {
             Helpers.TimedAction(
                 () => _host.Close(timeout), "Failed to close hosting service in {0} millis", timeout.TotalMilliseconds);
