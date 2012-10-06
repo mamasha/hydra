@@ -1,0 +1,67 @@
+---
+---
+{% assign vcall = site.tags.vcall-properties[0] %}
+{% assign vpoint = site.tags.vpoint-properties[0] %}
+<!DOCTYPE HTML PUBLIC>
+<html>
+<head>
+<title>{{page.title}}</title>
+<link rel="stylesheet" type="text/css" href="css/all.css" />
+</head>
+<body>
+    <div id="wrapper">
+        <div id="nav">
+            <ul class="nav-menu">
+                <li><a href="home.html">Home</a></li>
+                <li><a href="idea.html">Company</a></li>
+                <li><a href="designs.html">About</a></li>
+                <li class="support"><a href="support.html">Support</a></li>
+            </ul>
+        </div>
+        <div id="products">
+			<div id="product-vcall" class="product-img"></div>
+			<div id="product-vpoint" class="product-img"></div>
+			<div id="product-03" class="product-img"></div>
+			<div id="product-04" class="product-img"></div>
+        </div>
+        <div id="concept">
+            <div id="the-product"></div>
+            <div id="the-sentence">
+                    <p>{{page.the-sentence}}</p>
+            </div>
+        </div>
+        <div id="content">
+			<div id="content-nav">
+				<ul class="content-menu">
+					<li><a href="#">Story</a></li>
+					<li><a href="#">Demo</a></li>
+					<li><a href="#">How it works</a></li>
+					<li><a href="#">Getting started</a></li>
+					<li><a href="#">Trial</a></li>
+					<li><a href="#"></a></li>
+					<li><a href="#">Api</a></li>
+					<li class="pricing"><a href="#">Pricing</a></li>
+				</ul>
+			</div>
+            <div id="details">
+                {{content}}
+            </div>
+       </div>
+        <div id="footer">
+            <p>This is the Footer</p>
+        </div>
+    </div>
+	<script src="lib/jquery-1.7.min.js"></script>
+	<script src="lib/raphael-2.0.min.js"></script>
+	<script src="lib/all.js"></script>
+	<script type="text/javascript">
+	    $(document).ready(function () {
+	        draw_scaled_image("product-vcall", draw_vcall());
+	        draw_scaled_image("product-vpoint", draw_vpoint());
+	        draw_scaled_image("product-03", draw_hrenovina());
+	        draw_scaled_image("product-04", draw_hrenovina());
+	        draw_scaled_image("the-product", {{page.the-image}});
+	    });
+	</script>
+</body>
+</html>

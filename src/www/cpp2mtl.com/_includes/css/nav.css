@@ -1,0 +1,19 @@
+
+.nav-menu a{
+    text-decoration:none;}
+    
+.nav-menu a:focus {
+    outline:none;}
+
+.nav-menu a:hover{
+    text-decoration:underline;}
+
+.nav-menu{
+	float: right;}
+
+.nav-menu li{
+	float: left;
+    margin: 10px;}
+    
+.nav-menu .support{
+    margin-left: 32px;}   

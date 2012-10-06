@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A8AFB69D-F324-453F-8487-93E196FA3016}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>cpp2mtl.com</RootNamespace>
+    <AssemblyName>cpp2mtl.com</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="belive.txt" />
+    <Content Include="css\all.css" />
+    <Content Include="img\Vcall.png" />
+    <Content Include="index.html" />
+    <Content Include="index.txt" />
+    <Content Include="lib\all.js" />
+    <Content Include="lib\jquery-1.7.min.js" />
+    <Content Include="lib\raphael-2.0.min.js" />
+    <Content Include="moto.txt" />
+    <Content Include="_includes\jscript\api.js" />
+    <Content Include="_includes\jscript\img\draw_vcall.js" />
+    <Content Include="_includes\jscript\img\draw_vpoint.js" />
+    <None Include="vcall.md" />
+    <Content Include="_includes\css\concept.css" />
+    <Content Include="_includes\css\content.css" />
+    <Content Include="_includes\css\footer.css" />
+    <Content Include="_includes\css\header.css" />
+    <Content Include="_includes\css\nav.css" />
+    <Content Include="_includes\css\page.css" />
+    <Content Include="_includes\css\products.css" />
+    <Content Include="_includes\css\reset.css" />
+    <Content Include="_includes\jscript\img\draw_hrenovina.js" />
+    <Content Include="_layouts\product-page.html" />
+    <Content Include="_posts\2012-01-01-vcall.html" />
+    <Content Include="_posts\2012-01-01-vpoint.html" />
+    <None Include="vpoint.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="_config.yml" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

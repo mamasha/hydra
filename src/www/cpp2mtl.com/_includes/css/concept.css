@@ -1,0 +1,23 @@
+#the-product{
+    width: 180px;
+	height: 180px;
+	position: absolute;
+	left: 10px;
+	top: 10px;
+	background: gray;
+}
+
+#the-sentence{
+    width: 550px;
+	position: absolute;
+	right: 0px;
+}
+
+#the-sentence p{
+    padding-top: 100px;
+	padding-left: 30px;
+    font-size: 200%;
+}
+
+
+

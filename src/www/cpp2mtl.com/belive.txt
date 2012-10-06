@@ -1,0 +1,3 @@
+- write and play is the only way of prototyping
+- infrastructure should be the enabler but not an obstable
+- learning curve should not be a property of a technology

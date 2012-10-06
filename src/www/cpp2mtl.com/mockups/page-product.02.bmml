@@ -1,0 +1,76 @@
+<mockup version="1.0" skin="sketch" measuredW="927" measuredH="515" mockupW="846" mockupH="507">
+  <controls>
+    <control controlID="2" controlTypeID="com.balsamiq.mockups::MenuBar" x="622" y="8" w="-1" h="-1" measuredW="207" measuredH="29" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <borderStyle>none</borderStyle>
+        <text>Home%2C%20Company%2C%20About</text>
+      </controlProperties>
+    </control>
+    <control controlID="20" controlTypeID="__group__" x="863" y="67" w="64" h="404" measuredW="64" measuredH="404" zOrder="1" locked="false" isInGroup="-1">
+      <groupChildrenDescriptors>
+        <control controlID="0" controlTypeID="com.balsamiq.mockups::RoundButton" x="0" y="0" w="64" h="70" measuredW="32" measuredH="32" zOrder="0" locked="false" isInGroup="20">
+          <controlProperties>
+            <backgroundAlpha>1</backgroundAlpha>
+            <icon>ShareIcon%7Csmall</icon>
+            <shape>circle</shape>
+            <text/>
+          </controlProperties>
+        </control>
+        <control controlID="1" controlTypeID="com.balsamiq.mockups::RoundButton" x="0" y="112" w="64" h="70" measuredW="32" measuredH="32" zOrder="1" locked="false" isInGroup="20">
+          <controlProperties>
+            <backgroundAlpha>1</backgroundAlpha>
+            <icon>ShareIcon%7Csmall</icon>
+            <shape>circle</shape>
+            <text/>
+          </controlProperties>
+        </control>
+        <control controlID="2" controlTypeID="com.balsamiq.mockups::RoundButton" x="0" y="226" w="64" h="70" measuredW="32" measuredH="32" zOrder="2" locked="false" isInGroup="20">
+          <controlProperties>
+            <backgroundAlpha>1</backgroundAlpha>
+            <icon>ShareIcon%7Csmall</icon>
+            <shape>circle</shape>
+            <text/>
+          </controlProperties>
+        </control>
+        <control controlID="3" controlTypeID="com.balsamiq.mockups::RoundButton" x="0" y="334" w="64" h="70" measuredW="32" measuredH="32" zOrder="3" locked="false" isInGroup="20">
+          <controlProperties>
+            <backgroundAlpha>1</backgroundAlpha>
+            <icon>ShareIcon%7Csmall</icon>
+            <shape>circle</shape>
+            <text/>
+          </controlProperties>
+        </control>
+      </groupChildrenDescriptors>
+    </control>
+    <control controlID="26" controlTypeID="com.balsamiq.mockups::TextArea" x="283" y="52" w="546" h="463" measuredW="200" measuredH="140" zOrder="5" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text/>
+      </controlProperties>
+    </control>
+    <control controlID="28" controlTypeID="com.balsamiq.mockups::List" x="88" y="261" w="172" h="254" measuredW="100" measuredH="149" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Story%0ADemo%0AHow%20it%20works%0AGetting%20started%0ATrial%0AApi%0APricing</text>
+      </controlProperties>
+    </control>
+    <control controlID="29" controlTypeID="com.balsamiq.mockups::RoundButton" x="81" y="52" w="172" h="141" measuredW="32" measuredH="32" zOrder="2" locked="false" isInGroup="-1">
+      <controlProperties>
+        <backgroundAlpha>1</backgroundAlpha>
+        <icon>ShareIcon%7Csmall</icon>
+        <shape>circle</shape>
+        <text/>
+      </controlProperties>
+    </control>
+    <control controlID="30" controlTypeID="com.balsamiq.mockups::MultilineButton" x="81" y="208" w="74" h="24" measuredW="56" measuredH="51" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <size>12</size>
+        <text>Trial</text>
+      </controlProperties>
+    </control>
+    <control controlID="31" controlTypeID="com.balsamiq.mockups::MultilineButton" x="179" y="208" w="74" h="24" measuredW="67" measuredH="51" zOrder="4" locked="false" isInGroup="-1">
+      <controlProperties>
+        <size>12</size>
+        <text>Pricing</text>
+      </controlProperties>
+    </control>
+  </controls>
+</mockup>

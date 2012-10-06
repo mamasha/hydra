@@ -1,5 +1,6 @@
-bin
-stage
+/bin
+/stage
+/www
 
 dokuwiki.bat
 sidebar.txt

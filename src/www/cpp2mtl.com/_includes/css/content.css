@@ -1,0 +1,19 @@
+#content-nav{
+	height: 40px;
+	background: lime;}
+
+.content-menu a{
+    text-decoration:none;}
+    
+.content-menu a:focus {
+    outline:none;}
+
+.content-menu a:hover{
+    text-decoration:underline;}
+
+.content-menu li{
+	float: left;
+    margin: 10px;}
+    
+.content-menu .pricing{
+    margin-left: 32px;}   

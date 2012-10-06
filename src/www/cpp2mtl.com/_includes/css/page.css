@@ -1,0 +1,47 @@
+
+body{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 13px;}
+
+#wrapper{
+    margin: 0 auto;
+    width: 1000px;
+	position: relative;
+	background: Black; }
+
+.clear-both{
+	clear: both;}
+	
+#header{
+    height: 25px;
+    width: 1000px;
+    background: AntiqueWhite;}
+
+#nav{
+    height: 40px;
+    width: 1000px;
+    background: Khaki;}
+
+#products{
+    width: 150px;
+	position: absolute;
+	right: 0;
+    background: LightGreen;}
+
+#concept{
+    width: 850px;
+    height: 200px;
+	position: relative;
+    background: orange;}
+
+#content{
+    width: 850px;
+    position: relative;
+	background: Pink;}
+
+#footer{
+    height: 40px;
+    width: 1000px;
+    background: LightGray;
+    clear: both;
+}
