@@ -1,6 +1,7 @@
 ---
 layout: product-page
 title: All about Vpoint
+id: vpoint
 the-image: draw_vpoint()
 the-sentence: Vpoint is a function validation ...
 ---
